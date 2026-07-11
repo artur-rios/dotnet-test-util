@@ -1,0 +1,421 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Dotnet Test Util</title><link>https://artur-rios.github.io/dotnet-test-util/</link><description>Recent content on Dotnet Test Util</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><atom:link href="https://artur-rios.github.io/dotnet-test-util/index.xml" rel="self" type="application/rss+xml"/><item><title>Assertions &amp; Attributes</title><link>https://artur-rios.github.io/dotnet-test-util/assertions-and-attributes/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://artur-rios.github.io/dotnet-test-util/assertions-and-attributes/</guid><description>&lt;p&gt;This page covers &lt;code&gt;CustomAssert&lt;/code&gt; and the environment-aware test attributes.&lt;/p&gt;
+&lt;h2 id="customassert"&gt;CustomAssert&lt;/h2&gt;
+&lt;p&gt;&lt;code&gt;CustomAssert&lt;/code&gt; is a static class with the null/empty assertions that come up most often, so you don&amp;rsquo;t have to
+spell out &lt;code&gt;Assert.True(collection is null || !collection.Any())&lt;/code&gt; every time. Each method throws the same
+exception type as a failing &lt;code&gt;Assert&lt;/code&gt;, so failures read exactly like normal xUnit failures.&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Method&lt;/th&gt;
+&lt;th&gt;Passes when&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;NullOrEmpty(IEnumerable?)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;The collection is &lt;code&gt;null&lt;/code&gt; or has no elements&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;NotNullOrEmpty(IEnumerable?)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;The collection is not &lt;code&gt;null&lt;/code&gt; and has at least one element&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;NullOrEmpty(string?)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;The string is &lt;code&gt;null&lt;/code&gt; or empty&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;NotNullOrEmpty(string?)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;The string is not &lt;code&gt;null&lt;/code&gt; and not empty&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;NullOrWhiteSpace(string?)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;The string is &lt;code&gt;null&lt;/code&gt;, empty, or only white space&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;NotNullOrWhiteSpace(string?)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;The string has at least one non-white-space character&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-csharp" data-lang="csharp"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;CustomAssert.NullOrEmpty(Array.Empty&amp;lt;&lt;span style="color:#66d9ef"&gt;int&lt;/span&gt;&amp;gt;()); &lt;span style="color:#75715e"&gt;// passes&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;CustomAssert.NullOrEmpty((IEnumerable?)&lt;span style="color:#66d9ef"&gt;null&lt;/span&gt;); &lt;span style="color:#75715e"&gt;// passes&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;CustomAssert.NotNullOrEmpty(&lt;span style="color:#66d9ef"&gt;new&lt;/span&gt;[] { &lt;span style="color:#ae81ff"&gt;1&lt;/span&gt;, &lt;span style="color:#ae81ff"&gt;2&lt;/span&gt;, &lt;span style="color:#ae81ff"&gt;3&lt;/span&gt; }); &lt;span style="color:#75715e"&gt;// passes&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;CustomAssert.NullOrWhiteSpace(&lt;span style="color:#e6db74"&gt;&amp;#34; &amp;#34;&lt;/span&gt;); &lt;span style="color:#75715e"&gt;// passes&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;CustomAssert.NotNullOrWhiteSpace(&lt;span style="color:#e6db74"&gt;&amp;#34;value&amp;#34;&lt;/span&gt;); &lt;span style="color:#75715e"&gt;// passes&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;The collection overloads treat &lt;code&gt;null&lt;/code&gt; and empty the same way, so a &lt;code&gt;null&lt;/code&gt; reference never trips up a
+&lt;code&gt;NullOrEmpty&lt;/code&gt; check.&lt;/p&gt;</description><content>&lt;p&gt;This page covers &lt;code&gt;CustomAssert&lt;/code&gt; and the environment-aware test attributes.&lt;/p&gt;
+&lt;h2 id="customassert"&gt;CustomAssert&lt;/h2&gt;
+&lt;p&gt;&lt;code&gt;CustomAssert&lt;/code&gt; is a static class with the null/empty assertions that come up most often, so you don&amp;rsquo;t have to
+spell out &lt;code&gt;Assert.True(collection is null || !collection.Any())&lt;/code&gt; every time. Each method throws the same
+exception type as a failing &lt;code&gt;Assert&lt;/code&gt;, so failures read exactly like normal xUnit failures.&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Method&lt;/th&gt;
+&lt;th&gt;Passes when&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;NullOrEmpty(IEnumerable?)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;The collection is &lt;code&gt;null&lt;/code&gt; or has no elements&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;NotNullOrEmpty(IEnumerable?)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;The collection is not &lt;code&gt;null&lt;/code&gt; and has at least one element&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;NullOrEmpty(string?)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;The string is &lt;code&gt;null&lt;/code&gt; or empty&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;NotNullOrEmpty(string?)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;The string is not &lt;code&gt;null&lt;/code&gt; and not empty&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;NullOrWhiteSpace(string?)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;The string is &lt;code&gt;null&lt;/code&gt;, empty, or only white space&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;NotNullOrWhiteSpace(string?)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;The string has at least one non-white-space character&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-csharp" data-lang="csharp"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;CustomAssert.NullOrEmpty(Array.Empty&amp;lt;&lt;span style="color:#66d9ef"&gt;int&lt;/span&gt;&amp;gt;()); &lt;span style="color:#75715e"&gt;// passes&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;CustomAssert.NullOrEmpty((IEnumerable?)&lt;span style="color:#66d9ef"&gt;null&lt;/span&gt;); &lt;span style="color:#75715e"&gt;// passes&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;CustomAssert.NotNullOrEmpty(&lt;span style="color:#66d9ef"&gt;new&lt;/span&gt;[] { &lt;span style="color:#ae81ff"&gt;1&lt;/span&gt;, &lt;span style="color:#ae81ff"&gt;2&lt;/span&gt;, &lt;span style="color:#ae81ff"&gt;3&lt;/span&gt; }); &lt;span style="color:#75715e"&gt;// passes&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;CustomAssert.NullOrWhiteSpace(&lt;span style="color:#e6db74"&gt;&amp;#34; &amp;#34;&lt;/span&gt;); &lt;span style="color:#75715e"&gt;// passes&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;CustomAssert.NotNullOrWhiteSpace(&lt;span style="color:#e6db74"&gt;&amp;#34;value&amp;#34;&lt;/span&gt;); &lt;span style="color:#75715e"&gt;// passes&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;The collection overloads treat &lt;code&gt;null&lt;/code&gt; and empty the same way, so a &lt;code&gt;null&lt;/code&gt; reference never trips up a
+&lt;code&gt;NullOrEmpty&lt;/code&gt; check.&lt;/p&gt;
+&lt;h2 id="environment-aware-attributes"&gt;Environment-aware attributes&lt;/h2&gt;
+&lt;p&gt;Four attributes wrap xUnit&amp;rsquo;s &lt;code&gt;[Fact]&lt;/code&gt; and &lt;code&gt;[Theory]&lt;/code&gt; so a test can be skipped based on the active
+environment or an explicit condition:&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Attribute&lt;/th&gt;
+&lt;th&gt;Wraps&lt;/th&gt;
+&lt;th&gt;Intended use&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;UnitFactAttribute&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;[Fact]&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Unit test&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;UnitTheoryAttribute&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;[Theory]&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Data-driven unit test&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;FunctionalFactAttribute&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;[Fact]&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Functional / integration test&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;FunctionalTheoryAttribute&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;[Theory]&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Data-driven functional test&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;All four share the same two optional parameters:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-csharp" data-lang="csharp"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;UnitFact(EnvironmentType[]? environments = &lt;span style="color:#66d9ef"&gt;null&lt;/span&gt;, &lt;span style="color:#66d9ef"&gt;bool&lt;/span&gt; skipCondition = &lt;span style="color:#66d9ef"&gt;false&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;environments&lt;/code&gt;&lt;/strong&gt; — the environments in which the test &lt;strong&gt;must not&lt;/strong&gt; run. The current environment is read
+from the &lt;code&gt;ASPNETCORE_ENVIRONMENT&lt;/code&gt; variable and compared case-insensitively. When it matches one of the
+listed environments, the test is skipped with the reason &lt;code&gt;Test can't run on {environment}&lt;/code&gt;. &lt;code&gt;null&lt;/code&gt; (the
+default) imposes no environment restriction.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;skipCondition&lt;/code&gt;&lt;/strong&gt; — when &lt;code&gt;true&lt;/code&gt;, the test is skipped regardless of the environment, with the reason
+&lt;code&gt;Condition to skip matched&lt;/code&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-csharp" data-lang="csharp"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#75715e"&gt;// Runs everywhere except Production.&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#a6e22e"&gt;[UnitFact([EnvironmentType.Production]&lt;/span&gt;)]
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;public&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;void&lt;/span&gt; Calculates_totals() { &lt;span style="color:#75715e"&gt;/* ... */&lt;/span&gt; }
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#75715e"&gt;// Never runs while the feature flag is off, on any environment.&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#a6e22e"&gt;[FunctionalFact(skipCondition: FeatureFlags.PaymentsDisabled)]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;public&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;void&lt;/span&gt; Charges_card() { &lt;span style="color:#75715e"&gt;/* ... */&lt;/span&gt; }
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#75715e"&gt;// Data-driven test blocked on Staging and Production.&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#a6e22e"&gt;[UnitTheory([EnvironmentType.Staging, EnvironmentType.Production]&lt;/span&gt;)]
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#a6e22e"&gt;[InlineData(1)]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#a6e22e"&gt;[InlineData(2)]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;public&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;void&lt;/span&gt; Validates_input(&lt;span style="color:#66d9ef"&gt;int&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;value&lt;/span&gt;) { &lt;span style="color:#75715e"&gt;/* ... */&lt;/span&gt; }
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;&lt;code&gt;EnvironmentType&lt;/code&gt; comes from &lt;code&gt;ArturRios.Configuration.Enums&lt;/code&gt; and defines &lt;code&gt;Local&lt;/code&gt;, &lt;code&gt;Development&lt;/code&gt;, &lt;code&gt;Staging&lt;/code&gt;
+and &lt;code&gt;Production&lt;/code&gt;.&lt;/p&gt;
+&lt;h3 id="how-the-skip-decision-is-made"&gt;How the skip decision is made&lt;/h3&gt;
+&lt;ol&gt;
+&lt;li&gt;If &lt;code&gt;skipCondition&lt;/code&gt; is &lt;code&gt;true&lt;/code&gt;, the test is skipped.&lt;/li&gt;
+&lt;li&gt;Otherwise, if &lt;code&gt;environments&lt;/code&gt; is &lt;code&gt;null&lt;/code&gt; or empty, the test runs.&lt;/li&gt;
+&lt;li&gt;Otherwise, the test is skipped when the current &lt;code&gt;ASPNETCORE_ENVIRONMENT&lt;/code&gt; matches one of the listed
+environments.&lt;/li&gt;
+&lt;/ol&gt;</content></item><item><title>Fakes</title><link>https://artur-rios.github.io/dotnet-test-util/fakes/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://artur-rios.github.io/dotnet-test-util/fakes/</guid><description>&lt;p&gt;This page covers the in-memory test doubles: &lt;code&gt;FakeRepository&amp;lt;T&amp;gt;&lt;/code&gt; and &lt;code&gt;FakeScheduler&lt;/code&gt;.&lt;/p&gt;
+&lt;h2 id="fakerepositoryt"&gt;FakeRepository&amp;lt;T&amp;gt;&lt;/h2&gt;
+&lt;p&gt;&lt;code&gt;FakeRepository&amp;lt;T&amp;gt;&lt;/code&gt; is an in-memory implementation of &lt;code&gt;ICrudRepository&amp;lt;T&amp;gt;&lt;/code&gt; and &lt;code&gt;IRangeRepository&amp;lt;T&amp;gt;&lt;/code&gt; (from
+&lt;code&gt;ArturRios.Data&lt;/code&gt;). It stores entities in a backing list so you can exercise services that depend on a
+repository without touching a database. &lt;code&gt;T&lt;/code&gt; must derive from &lt;code&gt;ArturRios.Data.Entity&lt;/code&gt;.&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Method&lt;/th&gt;
+&lt;th&gt;Behavior&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;Create(T)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Assigns a fresh identifier (starting at &lt;code&gt;1&lt;/code&gt;), stores the entity, returns the id&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;GetById(int)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Returns the matching entity, or &lt;code&gt;null&lt;/code&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;GetAll()&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Returns every stored entity as &lt;code&gt;IQueryable&amp;lt;T&amp;gt;&lt;/code&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;Update(T)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Copies writable properties (except &lt;code&gt;Id&lt;/code&gt;) onto the stored entity; throws &lt;code&gt;KeyNotFoundException&lt;/code&gt; when the id is unknown&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;Delete(T)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Removes the entity with the matching id; throws &lt;code&gt;KeyNotFoundException&lt;/code&gt; when unknown&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;UpdateRange(List&amp;lt;T&amp;gt;)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Updates every entity that exists, silently skipping unknown ids; returns the updated entities&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;DeleteRange(List&amp;lt;int&amp;gt;)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Removes every entity whose id is listed; returns the ids that were actually removed&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-csharp" data-lang="csharp"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;public&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;class&lt;/span&gt; &lt;span style="color:#a6e22e"&gt;Person&lt;/span&gt; : Entity
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;{
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#66d9ef"&gt;public&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;string&lt;/span&gt; Name { &lt;span style="color:#66d9ef"&gt;get&lt;/span&gt;; &lt;span style="color:#66d9ef"&gt;set&lt;/span&gt;; } = &lt;span style="color:#66d9ef"&gt;string&lt;/span&gt;.Empty;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#66d9ef"&gt;public&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;int&lt;/span&gt; Age { &lt;span style="color:#66d9ef"&gt;get&lt;/span&gt;; &lt;span style="color:#66d9ef"&gt;set&lt;/span&gt;; }
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; repository = &lt;span style="color:#66d9ef"&gt;new&lt;/span&gt; FakeRepository&amp;lt;Person&amp;gt;();
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; annId = repository.Create(&lt;span style="color:#66d9ef"&gt;new&lt;/span&gt; Person { Name = &lt;span style="color:#e6db74"&gt;&amp;#34;Ann&amp;#34;&lt;/span&gt;, Age = &lt;span style="color:#ae81ff"&gt;30&lt;/span&gt; }); &lt;span style="color:#75715e"&gt;// annId == 1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; bobId = repository.Create(&lt;span style="color:#66d9ef"&gt;new&lt;/span&gt; Person { Name = &lt;span style="color:#e6db74"&gt;&amp;#34;Bob&amp;#34;&lt;/span&gt;, Age = &lt;span style="color:#ae81ff"&gt;25&lt;/span&gt; }); &lt;span style="color:#75715e"&gt;// bobId == 2&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;repository.Update(&lt;span style="color:#66d9ef"&gt;new&lt;/span&gt; Person { Id = annId, Name = &lt;span style="color:#e6db74"&gt;&amp;#34;Ann Smith&amp;#34;&lt;/span&gt;, Age = &lt;span style="color:#ae81ff"&gt;31&lt;/span&gt; });
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; ann = repository.GetById(annId); &lt;span style="color:#75715e"&gt;// Name == &amp;#34;Ann Smith&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; all = repository.GetAll().ToList(); &lt;span style="color:#75715e"&gt;// two people&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;repository.DeleteRange([annId, bobId]);
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;&lt;code&gt;Update&lt;/code&gt; uses reflection to copy every writable property from the incoming entity onto the stored one, so it
+mirrors the behavior of a real ORM update where the identifier is preserved.&lt;/p&gt;</description><content>&lt;p&gt;This page covers the in-memory test doubles: &lt;code&gt;FakeRepository&amp;lt;T&amp;gt;&lt;/code&gt; and &lt;code&gt;FakeScheduler&lt;/code&gt;.&lt;/p&gt;
+&lt;h2 id="fakerepositoryt"&gt;FakeRepository&amp;lt;T&amp;gt;&lt;/h2&gt;
+&lt;p&gt;&lt;code&gt;FakeRepository&amp;lt;T&amp;gt;&lt;/code&gt; is an in-memory implementation of &lt;code&gt;ICrudRepository&amp;lt;T&amp;gt;&lt;/code&gt; and &lt;code&gt;IRangeRepository&amp;lt;T&amp;gt;&lt;/code&gt; (from
+&lt;code&gt;ArturRios.Data&lt;/code&gt;). It stores entities in a backing list so you can exercise services that depend on a
+repository without touching a database. &lt;code&gt;T&lt;/code&gt; must derive from &lt;code&gt;ArturRios.Data.Entity&lt;/code&gt;.&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Method&lt;/th&gt;
+&lt;th&gt;Behavior&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;Create(T)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Assigns a fresh identifier (starting at &lt;code&gt;1&lt;/code&gt;), stores the entity, returns the id&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;GetById(int)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Returns the matching entity, or &lt;code&gt;null&lt;/code&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;GetAll()&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Returns every stored entity as &lt;code&gt;IQueryable&amp;lt;T&amp;gt;&lt;/code&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;Update(T)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Copies writable properties (except &lt;code&gt;Id&lt;/code&gt;) onto the stored entity; throws &lt;code&gt;KeyNotFoundException&lt;/code&gt; when the id is unknown&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;Delete(T)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Removes the entity with the matching id; throws &lt;code&gt;KeyNotFoundException&lt;/code&gt; when unknown&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;UpdateRange(List&amp;lt;T&amp;gt;)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Updates every entity that exists, silently skipping unknown ids; returns the updated entities&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;DeleteRange(List&amp;lt;int&amp;gt;)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Removes every entity whose id is listed; returns the ids that were actually removed&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-csharp" data-lang="csharp"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;public&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;class&lt;/span&gt; &lt;span style="color:#a6e22e"&gt;Person&lt;/span&gt; : Entity
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;{
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#66d9ef"&gt;public&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;string&lt;/span&gt; Name { &lt;span style="color:#66d9ef"&gt;get&lt;/span&gt;; &lt;span style="color:#66d9ef"&gt;set&lt;/span&gt;; } = &lt;span style="color:#66d9ef"&gt;string&lt;/span&gt;.Empty;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#66d9ef"&gt;public&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;int&lt;/span&gt; Age { &lt;span style="color:#66d9ef"&gt;get&lt;/span&gt;; &lt;span style="color:#66d9ef"&gt;set&lt;/span&gt;; }
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; repository = &lt;span style="color:#66d9ef"&gt;new&lt;/span&gt; FakeRepository&amp;lt;Person&amp;gt;();
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; annId = repository.Create(&lt;span style="color:#66d9ef"&gt;new&lt;/span&gt; Person { Name = &lt;span style="color:#e6db74"&gt;&amp;#34;Ann&amp;#34;&lt;/span&gt;, Age = &lt;span style="color:#ae81ff"&gt;30&lt;/span&gt; }); &lt;span style="color:#75715e"&gt;// annId == 1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; bobId = repository.Create(&lt;span style="color:#66d9ef"&gt;new&lt;/span&gt; Person { Name = &lt;span style="color:#e6db74"&gt;&amp;#34;Bob&amp;#34;&lt;/span&gt;, Age = &lt;span style="color:#ae81ff"&gt;25&lt;/span&gt; }); &lt;span style="color:#75715e"&gt;// bobId == 2&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;repository.Update(&lt;span style="color:#66d9ef"&gt;new&lt;/span&gt; Person { Id = annId, Name = &lt;span style="color:#e6db74"&gt;&amp;#34;Ann Smith&amp;#34;&lt;/span&gt;, Age = &lt;span style="color:#ae81ff"&gt;31&lt;/span&gt; });
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; ann = repository.GetById(annId); &lt;span style="color:#75715e"&gt;// Name == &amp;#34;Ann Smith&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; all = repository.GetAll().ToList(); &lt;span style="color:#75715e"&gt;// two people&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;repository.DeleteRange([annId, bobId]);
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;&lt;code&gt;Update&lt;/code&gt; uses reflection to copy every writable property from the incoming entity onto the stored one, so it
+mirrors the behavior of a real ORM update where the identifier is preserved.&lt;/p&gt;
+&lt;h2 id="fakescheduler"&gt;FakeScheduler&lt;/h2&gt;
+&lt;p&gt;&lt;code&gt;FakeScheduler&lt;/code&gt; simulates a scheduled (delayed) dispatch of a command or query through an
+&lt;code&gt;ArturRios.Mediator.CommandQueryMediator&lt;/code&gt;. It waits for a configurable delay and then dispatches, which is
+useful for testing code paths that would otherwise run on a timer or background schedule.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-csharp" data-lang="csharp"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;FakeScheduler(CommandQueryMediator mediator, &lt;span style="color:#66d9ef"&gt;int&lt;/span&gt; waitTimeInSeconds = &lt;span style="color:#ae81ff"&gt;60&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Method&lt;/th&gt;
+&lt;th&gt;Behavior&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;CreateCommandSchedule&amp;lt;TCommand, TCommandOutput&amp;gt;(TCommand)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Waits, then dispatches the command&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;CreateQuerySchedule&amp;lt;TQuery, TQueryOutput&amp;gt;(TQuery)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Waits, then dispatches the query&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;Pass a small &lt;code&gt;waitTimeInSeconds&lt;/code&gt; (for example &lt;code&gt;0&lt;/code&gt;) to keep tests fast:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-csharp" data-lang="csharp"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; services = &lt;span style="color:#66d9ef"&gt;new&lt;/span&gt; ServiceCollection();
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;services.AddSingleton&amp;lt;ICommandHandlerAsync&amp;lt;PingCommand, PingCommandOutput&amp;gt;&amp;gt;(handler);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; provider = services.BuildServiceProvider();
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; mediator = &lt;span style="color:#66d9ef"&gt;new&lt;/span&gt; CommandQueryMediator(provider.GetRequiredService&amp;lt;IServiceScopeFactory&amp;gt;());
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; scheduler = &lt;span style="color:#66d9ef"&gt;new&lt;/span&gt; FakeScheduler(mediator, waitTimeInSeconds: &lt;span style="color:#ae81ff"&gt;0&lt;/span&gt;);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;await&lt;/span&gt; scheduler.CreateCommandSchedule&amp;lt;PingCommand, PingCommandOutput&amp;gt;(&lt;span style="color:#66d9ef"&gt;new&lt;/span&gt; PingCommand { Value = &lt;span style="color:#e6db74"&gt;&amp;#34;ping&amp;#34;&lt;/span&gt; });
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#75715e"&gt;// the handler has now been invoked through the mediator&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;</content></item><item><title>Web API Testing</title><link>https://artur-rios.github.io/dotnet-test-util/web-api-testing/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://artur-rios.github.io/dotnet-test-util/web-api-testing/</guid><description>&lt;p&gt;&lt;code&gt;WebApiTest&amp;lt;T&amp;gt;&lt;/code&gt; is a base class for functional web API tests. It hosts your API in memory with
+&lt;code&gt;WebApplicationFactory&amp;lt;T&amp;gt;&lt;/code&gt; and exposes an &lt;code&gt;HttpGateway&lt;/code&gt; plus helpers for authenticating and authorizing
+requests.&lt;/p&gt;
+&lt;h2 id="getting-started"&gt;Getting started&lt;/h2&gt;
+&lt;p&gt;Derive from &lt;code&gt;WebApiTest&amp;lt;T&amp;gt;&lt;/code&gt;, where &lt;code&gt;T&lt;/code&gt; is the entry point of the API under test (typically its &lt;code&gt;Program&lt;/code&gt;
+class), and pass the environment to run as:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-csharp" data-lang="csharp"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;public&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;class&lt;/span&gt; &lt;span style="color:#a6e22e"&gt;ProductsApiTests&lt;/span&gt; : WebApiTest&amp;lt;Program&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;{
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#66d9ef"&gt;private&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;static&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;readonly&lt;/span&gt; Credentials Credentials = &lt;span style="color:#66d9ef"&gt;new&lt;/span&gt;(&lt;span style="color:#e6db74"&gt;&amp;#34;user@test.com&amp;#34;&lt;/span&gt;, &lt;span style="color:#e6db74"&gt;&amp;#34;secret123&amp;#34;&lt;/span&gt;);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#66d9ef"&gt;public&lt;/span&gt; ProductsApiTests() : &lt;span style="color:#66d9ef"&gt;base&lt;/span&gt;(EnvironmentType.Local) { }
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#a6e22e"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#a6e22e"&gt; [Fact]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#66d9ef"&gt;public&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;async&lt;/span&gt; Task Rejects_anonymous_requests()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; response = &lt;span style="color:#66d9ef"&gt;await&lt;/span&gt; Gateway.GetAsync&amp;lt;DataOutput&amp;lt;ProductOutput&amp;gt;&amp;gt;(&lt;span style="color:#e6db74"&gt;&amp;#34;/products/1&amp;#34;&lt;/span&gt;);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#a6e22e"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#a6e22e"&gt; [Fact]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#66d9ef"&gt;public&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;async&lt;/span&gt; Task Creates_a_product()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#66d9ef"&gt;await&lt;/span&gt; AuthenticateAndAuthorizeAsync(Credentials, &lt;span style="color:#e6db74"&gt;&amp;#34;/auth&amp;#34;&lt;/span&gt;);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; response = &lt;span style="color:#66d9ef"&gt;await&lt;/span&gt; Gateway.PostAsync&amp;lt;DataOutput&amp;lt;ProductOutput&amp;gt;&amp;gt;(&lt;span style="color:#e6db74"&gt;&amp;#34;/products&amp;#34;&lt;/span&gt;, &lt;span style="color:#66d9ef"&gt;new&lt;/span&gt; { Name = &lt;span style="color:#e6db74"&gt;&amp;#34;Widget&amp;#34;&lt;/span&gt; });
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;The constructor sets &lt;code&gt;ASPNETCORE_ENVIRONMENT&lt;/code&gt; to the given environment (lower-cased), starts the in-memory
+host, and creates the gateway against it.&lt;/p&gt;</description><content>&lt;p&gt;&lt;code&gt;WebApiTest&amp;lt;T&amp;gt;&lt;/code&gt; is a base class for functional web API tests. It hosts your API in memory with
+&lt;code&gt;WebApplicationFactory&amp;lt;T&amp;gt;&lt;/code&gt; and exposes an &lt;code&gt;HttpGateway&lt;/code&gt; plus helpers for authenticating and authorizing
+requests.&lt;/p&gt;
+&lt;h2 id="getting-started"&gt;Getting started&lt;/h2&gt;
+&lt;p&gt;Derive from &lt;code&gt;WebApiTest&amp;lt;T&amp;gt;&lt;/code&gt;, where &lt;code&gt;T&lt;/code&gt; is the entry point of the API under test (typically its &lt;code&gt;Program&lt;/code&gt;
+class), and pass the environment to run as:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-csharp" data-lang="csharp"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;public&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;class&lt;/span&gt; &lt;span style="color:#a6e22e"&gt;ProductsApiTests&lt;/span&gt; : WebApiTest&amp;lt;Program&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;{
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#66d9ef"&gt;private&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;static&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;readonly&lt;/span&gt; Credentials Credentials = &lt;span style="color:#66d9ef"&gt;new&lt;/span&gt;(&lt;span style="color:#e6db74"&gt;&amp;#34;user@test.com&amp;#34;&lt;/span&gt;, &lt;span style="color:#e6db74"&gt;&amp;#34;secret123&amp;#34;&lt;/span&gt;);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#66d9ef"&gt;public&lt;/span&gt; ProductsApiTests() : &lt;span style="color:#66d9ef"&gt;base&lt;/span&gt;(EnvironmentType.Local) { }
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#a6e22e"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#a6e22e"&gt; [Fact]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#66d9ef"&gt;public&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;async&lt;/span&gt; Task Rejects_anonymous_requests()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; response = &lt;span style="color:#66d9ef"&gt;await&lt;/span&gt; Gateway.GetAsync&amp;lt;DataOutput&amp;lt;ProductOutput&amp;gt;&amp;gt;(&lt;span style="color:#e6db74"&gt;&amp;#34;/products/1&amp;#34;&lt;/span&gt;);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#a6e22e"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#a6e22e"&gt; [Fact]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#66d9ef"&gt;public&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;async&lt;/span&gt; Task Creates_a_product()
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#66d9ef"&gt;await&lt;/span&gt; AuthenticateAndAuthorizeAsync(Credentials, &lt;span style="color:#e6db74"&gt;&amp;#34;/auth&amp;#34;&lt;/span&gt;);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; response = &lt;span style="color:#66d9ef"&gt;await&lt;/span&gt; Gateway.PostAsync&amp;lt;DataOutput&amp;lt;ProductOutput&amp;gt;&amp;gt;(&lt;span style="color:#e6db74"&gt;&amp;#34;/products&amp;#34;&lt;/span&gt;, &lt;span style="color:#66d9ef"&gt;new&lt;/span&gt; { Name = &lt;span style="color:#e6db74"&gt;&amp;#34;Widget&amp;#34;&lt;/span&gt; });
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;The constructor sets &lt;code&gt;ASPNETCORE_ENVIRONMENT&lt;/code&gt; to the given environment (lower-cased), starts the in-memory
+host, and creates the gateway against it.&lt;/p&gt;
+&lt;h2 id="members"&gt;Members&lt;/h2&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Member&lt;/th&gt;
+&lt;th&gt;Purpose&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;Gateway&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;The &lt;code&gt;HttpGateway&lt;/code&gt; bound to the in-memory host; use it for all requests&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;AuthenticateAsync(Credentials, authRoute)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Posts credentials, returns the &lt;code&gt;Authentication&lt;/code&gt; payload, throws &lt;code&gt;TestException&lt;/code&gt; on failure&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;Authorize(authToken)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Adds a &lt;code&gt;Bearer&lt;/code&gt; token to the gateway&amp;rsquo;s default request headers&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;AuthenticateAndAuthorizeAsync(Credentials, authRoute)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Authenticates and applies the returned token in one call&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;&lt;code&gt;Credentials&lt;/code&gt; and &lt;code&gt;Authentication&lt;/code&gt; come from &lt;code&gt;ArturRios.Util.WebApi.Security.Records&lt;/code&gt;. The gateway helpers
+(&lt;code&gt;GetAsync&amp;lt;T&amp;gt;&lt;/code&gt;, &lt;code&gt;PostAsync&amp;lt;T&amp;gt;&lt;/code&gt;, &lt;code&gt;PutAsync&amp;lt;T&amp;gt;&lt;/code&gt;, &lt;code&gt;PatchAsync&amp;lt;T&amp;gt;&lt;/code&gt;, &lt;code&gt;DeleteAsync&amp;lt;T&amp;gt;&lt;/code&gt;) return
+&lt;code&gt;HttpOutput&amp;lt;T&amp;gt;&lt;/code&gt; with &lt;code&gt;StatusCode&lt;/code&gt;, &lt;code&gt;Headers&lt;/code&gt; and a deserialized &lt;code&gt;Body&lt;/code&gt;.&lt;/p&gt;
+&lt;h2 id="authentication-contract"&gt;Authentication contract&lt;/h2&gt;
+&lt;p&gt;&lt;code&gt;AuthenticateAsync&lt;/code&gt; expects the authentication route to return a &lt;code&gt;DataOutput&amp;lt;Authentication&amp;gt;&lt;/code&gt; with HTTP &lt;code&gt;200&lt;/code&gt;
+and:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;a successful output (no errors),&lt;/li&gt;
+&lt;li&gt;a non-null &lt;code&gt;Data&lt;/code&gt;, and&lt;/li&gt;
+&lt;li&gt;a non-empty &lt;code&gt;Data.Token&lt;/code&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;When any of these is missing it throws &lt;code&gt;TestException(&amp;quot;Could not authenticate&amp;quot;)&lt;/code&gt;. On success, the token is
+returned (and applied to the gateway headers when you use &lt;code&gt;AuthenticateAndAuthorizeAsync&lt;/code&gt;).&lt;/p&gt;
+&lt;h2 id="resource-cleanup"&gt;Resource cleanup&lt;/h2&gt;
+&lt;p&gt;&lt;code&gt;WebApiTest&amp;lt;T&amp;gt;&lt;/code&gt; implements &lt;code&gt;IDisposable&lt;/code&gt; and disposes the underlying &lt;code&gt;WebApplicationFactory&amp;lt;T&amp;gt;&lt;/code&gt; (and the HTTP
+clients it created) when the test class is torn down. If you override disposal in a derived class, call the
+protected &lt;code&gt;Dispose(bool)&lt;/code&gt; overload so the host is still released.&lt;/p&gt;</content></item></channel></rss>
