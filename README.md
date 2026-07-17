@@ -1,12 +1,16 @@
 # Test Util
 
+[![Docs](https://img.shields.io/badge/docs-website-blue)](https://artur-rios.github.io/dotnet-test-util)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
+[![NuGet](https://img.shields.io/nuget/v/ArturRios.Util.Test.svg)](https://www.nuget.org/packages/ArturRios.Util.Test)
+
 `ArturRios.Util.Test` is a small .NET library of test-support utilities for xUnit projects. It bundles the
 helpers that come up again and again when testing services and web APIs: extra assertions, environment-aware
 test attributes, in-memory fakes for repositories and schedulers, and a base class for functional web API tests.
 
 ## Installation
 
-```
+```bash
 dotnet add package ArturRios.Util.Test
 ```
 

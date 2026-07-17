@@ -10,7 +10,7 @@ test attributes, in-memory fakes for repositories and schedulers, and a base cla
 
 ## Installation
 
-```
+```bash
 dotnet add package ArturRios.Util.Test
 ```
 
