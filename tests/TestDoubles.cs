@@ -1,4 +1,4 @@
-using ArturRios.Data;
+using ArturRios.Data.Relational.Core.Entities;
 using ArturRios.Mediator.Command;
 using ArturRios.Mediator.Command.Interfaces;
 using ArturRios.Mediator.Query;
