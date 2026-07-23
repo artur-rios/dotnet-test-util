@@ -3,12 +3,13 @@ using System.Reflection;
 using ArturRios.Configuration.Enums;
 using ArturRios.Output;
 using ArturRios.Util.Http;
+using ArturRios.Util.Test.Exceptions;
 using ArturRios.Util.WebApi.Security.Records;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
-namespace ArturRios.Util.Test;
+namespace ArturRios.Util.Test.Functional;
 
 /// <summary>
 /// Base class for functional web API tests. It spins up an in-memory host with

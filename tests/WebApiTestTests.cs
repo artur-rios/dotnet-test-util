@@ -1,5 +1,7 @@
 using System.Net;
 using ArturRios.Configuration.Enums;
+using ArturRios.Util.Test.Exceptions;
+using ArturRios.Util.Test.Functional;
 using ArturRios.Util.WebApi.Security.Records;
 
 namespace ArturRios.Util.Test.Tests;

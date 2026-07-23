@@ -2,7 +2,7 @@ using System.Collections;
 using ArturRios.Extensions;
 using Xunit;
 
-namespace ArturRios.Util.Test;
+namespace ArturRios.Util.Test.Assertion;
 
 /// <summary>
 /// Extra xUnit-style assertions for the null/empty checks that come up most often in tests.
