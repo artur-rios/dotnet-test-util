@@ -93,13 +93,15 @@ exception type as a failing &lt;code&gt;Assert&lt;/code&gt;, so failures read ex
 &lt;code&gt;NullOrEmpty&lt;/code&gt; check.&lt;/p&gt;
 &lt;h2 id="environment-aware-attributes"&gt;Environment-aware attributes&lt;/h2&gt;
 &lt;p&gt;Four attributes wrap xUnit&amp;rsquo;s &lt;code&gt;[Fact]&lt;/code&gt; and &lt;code&gt;[Theory]&lt;/code&gt; so a test can be skipped based on the active
-environment or an explicit condition:&lt;/p&gt;
+environment or an explicit condition. Each also stamps a &lt;code&gt;Category&lt;/code&gt; trait (&lt;code&gt;Unit&lt;/code&gt; or &lt;code&gt;Functional&lt;/code&gt;), so the
+tests can be filtered by type, for example &lt;code&gt;dotnet test --filter &amp;quot;Category=Unit&amp;quot;&lt;/code&gt;:&lt;/p&gt;
 &lt;table&gt;
 &lt;thead&gt;
 &lt;tr&gt;
 &lt;th&gt;Attribute&lt;/th&gt;
 &lt;th&gt;Wraps&lt;/th&gt;
 &lt;th&gt;Intended use&lt;/th&gt;
+&lt;th&gt;&lt;code&gt;Category&lt;/code&gt; trait&lt;/th&gt;
 &lt;/tr&gt;
 &lt;/thead&gt;
 &lt;tbody&gt;
@@ -107,21 +109,25 @@ environment or an explicit condition:&lt;/p&gt;
 &lt;td&gt;&lt;code&gt;UnitFactAttribute&lt;/code&gt;&lt;/td&gt;
 &lt;td&gt;&lt;code&gt;[Fact]&lt;/code&gt;&lt;/td&gt;
 &lt;td&gt;Unit test&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;Unit&lt;/code&gt;&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
 &lt;td&gt;&lt;code&gt;UnitTheoryAttribute&lt;/code&gt;&lt;/td&gt;
 &lt;td&gt;&lt;code&gt;[Theory]&lt;/code&gt;&lt;/td&gt;
 &lt;td&gt;Data-driven unit test&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;Unit&lt;/code&gt;&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
 &lt;td&gt;&lt;code&gt;FunctionalFactAttribute&lt;/code&gt;&lt;/td&gt;
 &lt;td&gt;&lt;code&gt;[Fact]&lt;/code&gt;&lt;/td&gt;
 &lt;td&gt;Functional / integration test&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;Functional&lt;/code&gt;&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
 &lt;td&gt;&lt;code&gt;FunctionalTheoryAttribute&lt;/code&gt;&lt;/td&gt;
 &lt;td&gt;&lt;code&gt;[Theory]&lt;/code&gt;&lt;/td&gt;
 &lt;td&gt;Data-driven functional test&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;Functional&lt;/code&gt;&lt;/td&gt;
 &lt;/tr&gt;
 &lt;/tbody&gt;
 &lt;/table&gt;
@@ -156,11 +162,13 @@ and &lt;code&gt;Production&lt;/code&gt;.&lt;/p&gt;
 &lt;li&gt;Otherwise, if &lt;code&gt;environments&lt;/code&gt; is &lt;code&gt;null&lt;/code&gt; or empty, the test runs.&lt;/li&gt;
 &lt;li&gt;Otherwise, the test is skipped when the current &lt;code&gt;ASPNETCORE_ENVIRONMENT&lt;/code&gt; matches one of the listed
 environments.&lt;/li&gt;
-&lt;/ol&gt;</content></item><item><title>Fakes</title><link>https://artur-rios.github.io/dotnet-test-util/fakes/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://artur-rios.github.io/dotnet-test-util/fakes/</guid><description>&lt;p&gt;This page covers the in-memory test doubles: &lt;code&gt;FakeRepository&amp;lt;T&amp;gt;&lt;/code&gt; and &lt;code&gt;FakeScheduler&lt;/code&gt;.&lt;/p&gt;
+&lt;/ol&gt;</content></item><item><title>Fakes</title><link>https://artur-rios.github.io/dotnet-test-util/fakes/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://artur-rios.github.io/dotnet-test-util/fakes/</guid><description>&lt;p&gt;This page covers the in-memory test doubles: &lt;code&gt;FakeRepository&amp;lt;T&amp;gt;&lt;/code&gt;, &lt;code&gt;AsyncFakeRepository&amp;lt;T&amp;gt;&lt;/code&gt; and &lt;code&gt;FakeScheduler&lt;/code&gt;.&lt;/p&gt;
 &lt;h2 id="fakerepositoryt"&gt;FakeRepository&amp;lt;T&amp;gt;&lt;/h2&gt;
-&lt;p&gt;&lt;code&gt;FakeRepository&amp;lt;T&amp;gt;&lt;/code&gt; is an in-memory implementation of &lt;code&gt;ICrudRepository&amp;lt;T&amp;gt;&lt;/code&gt; and &lt;code&gt;IRangeRepository&amp;lt;T&amp;gt;&lt;/code&gt; (from
-&lt;code&gt;ArturRios.Data&lt;/code&gt;). It stores entities in a backing list so you can exercise services that depend on a
-repository without touching a database. &lt;code&gt;T&lt;/code&gt; must derive from &lt;code&gt;ArturRios.Data.Entity&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;FakeRepository&amp;lt;T&amp;gt;&lt;/code&gt; is an in-memory implementation of &lt;code&gt;IRepository&amp;lt;T&amp;gt;&lt;/code&gt; (from &lt;code&gt;ArturRios.Data.Relational.Core&lt;/code&gt;).
+It stores entities in a backing list so you can exercise services that depend on a repository without touching a
+database. &lt;code&gt;T&lt;/code&gt; must derive from &lt;code&gt;ArturRios.Data.Relational.Core.Entities.Entity&lt;/code&gt;. Every method returns a
+&lt;code&gt;DataOutput&amp;lt;...&amp;gt;&lt;/code&gt;; lookups that find no matching entity return a failed output carrying an error rather than
+throwing.&lt;/p&gt;
 &lt;table&gt;
 &lt;thead&gt;
 &lt;tr&gt;
@@ -174,27 +182,35 @@ repository without touching a database. &lt;code&gt;T&lt;/code&gt; must derive f
 &lt;td&gt;Assigns a fresh identifier (starting at &lt;code&gt;1&lt;/code&gt;), stores the entity, returns the id&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
-&lt;td&gt;&lt;code&gt;GetById(int)&lt;/code&gt;&lt;/td&gt;
-&lt;td&gt;Returns the matching entity, or &lt;code&gt;null&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;GetById(long)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Returns a successful output with the matching entity, or a failed output when the id is unknown&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
 &lt;td&gt;&lt;code&gt;GetAll()&lt;/code&gt;&lt;/td&gt;
-&lt;td&gt;Returns every stored entity as &lt;code&gt;IQueryable&amp;lt;T&amp;gt;&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Returns every stored entity&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;Query()&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Exposes the stored entities as &lt;code&gt;IQueryable&amp;lt;T&amp;gt;&lt;/code&gt;&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
 &lt;td&gt;&lt;code&gt;Update(T)&lt;/code&gt;&lt;/td&gt;
-&lt;td&gt;Copies writable properties (except &lt;code&gt;Id&lt;/code&gt;) onto the stored entity; throws &lt;code&gt;KeyNotFoundException&lt;/code&gt; when the id is unknown&lt;/td&gt;
+&lt;td&gt;Copies writable properties (except &lt;code&gt;Id&lt;/code&gt;) onto the stored entity; returns a failed output when the id is unknown&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
 &lt;td&gt;&lt;code&gt;Delete(T)&lt;/code&gt;&lt;/td&gt;
-&lt;td&gt;Removes the entity with the matching id; throws &lt;code&gt;KeyNotFoundException&lt;/code&gt; when unknown&lt;/td&gt;
+&lt;td&gt;Removes the entity with the matching id; returns a failed output when unknown&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
-&lt;td&gt;&lt;code&gt;UpdateRange(List&amp;lt;T&amp;gt;)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;CreateRange(IEnumerable&amp;lt;T&amp;gt;)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Stores every entity, assigning each a fresh id; returns the assigned ids&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;UpdateRange(IEnumerable&amp;lt;T&amp;gt;)&lt;/code&gt;&lt;/td&gt;
 &lt;td&gt;Updates every entity that exists, silently skipping unknown ids; returns the updated entities&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
-&lt;td&gt;&lt;code&gt;DeleteRange(List&amp;lt;int&amp;gt;)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;DeleteRange(IEnumerable&amp;lt;long&amp;gt;)&lt;/code&gt;&lt;/td&gt;
 &lt;td&gt;Removes every entity whose id is listed; returns the ids that were actually removed&lt;/td&gt;
 &lt;/tr&gt;
 &lt;/tbody&gt;
@@ -207,21 +223,23 @@ repository without touching a database. &lt;code&gt;T&lt;/code&gt; must derive f
 &lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; repository = &lt;span style="color:#66d9ef"&gt;new&lt;/span&gt; FakeRepository&amp;lt;Person&amp;gt;();
 &lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; annId = repository.Create(&lt;span style="color:#66d9ef"&gt;new&lt;/span&gt; Person { Name = &lt;span style="color:#e6db74"&gt;&amp;#34;Ann&amp;#34;&lt;/span&gt;, Age = &lt;span style="color:#ae81ff"&gt;30&lt;/span&gt; }); &lt;span style="color:#75715e"&gt;// annId == 1&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; bobId = repository.Create(&lt;span style="color:#66d9ef"&gt;new&lt;/span&gt; Person { Name = &lt;span style="color:#e6db74"&gt;&amp;#34;Bob&amp;#34;&lt;/span&gt;, Age = &lt;span style="color:#ae81ff"&gt;25&lt;/span&gt; }); &lt;span style="color:#75715e"&gt;// bobId == 2&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; annId = repository.Create(&lt;span style="color:#66d9ef"&gt;new&lt;/span&gt; Person { Name = &lt;span style="color:#e6db74"&gt;&amp;#34;Ann&amp;#34;&lt;/span&gt;, Age = &lt;span style="color:#ae81ff"&gt;30&lt;/span&gt; }).Data; &lt;span style="color:#75715e"&gt;// annId == 1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; bobId = repository.Create(&lt;span style="color:#66d9ef"&gt;new&lt;/span&gt; Person { Name = &lt;span style="color:#e6db74"&gt;&amp;#34;Bob&amp;#34;&lt;/span&gt;, Age = &lt;span style="color:#ae81ff"&gt;25&lt;/span&gt; }).Data; &lt;span style="color:#75715e"&gt;// bobId == 2&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;repository.Update(&lt;span style="color:#66d9ef"&gt;new&lt;/span&gt; Person { Id = annId, Name = &lt;span style="color:#e6db74"&gt;&amp;#34;Ann Smith&amp;#34;&lt;/span&gt;, Age = &lt;span style="color:#ae81ff"&gt;31&lt;/span&gt; });
 &lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; ann = repository.GetById(annId); &lt;span style="color:#75715e"&gt;// Name == &amp;#34;Ann Smith&amp;#34;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; all = repository.GetAll().ToList(); &lt;span style="color:#75715e"&gt;// two people&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; ann = repository.GetById(annId).Data; &lt;span style="color:#75715e"&gt;// Name == &amp;#34;Ann Smith&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; all = repository.GetAll().Data!.ToList(); &lt;span style="color:#75715e"&gt;// two people&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;repository.DeleteRange([annId, bobId]);
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;&lt;code&gt;Update&lt;/code&gt; uses reflection to copy every writable property from the incoming entity onto the stored one, so it
-mirrors the behavior of a real ORM update where the identifier is preserved.&lt;/p&gt;</description><content>&lt;p&gt;This page covers the in-memory test doubles: &lt;code&gt;FakeRepository&amp;lt;T&amp;gt;&lt;/code&gt; and &lt;code&gt;FakeScheduler&lt;/code&gt;.&lt;/p&gt;
+mirrors the behavior of a real ORM update where the identifier is preserved.&lt;/p&gt;</description><content>&lt;p&gt;This page covers the in-memory test doubles: &lt;code&gt;FakeRepository&amp;lt;T&amp;gt;&lt;/code&gt;, &lt;code&gt;AsyncFakeRepository&amp;lt;T&amp;gt;&lt;/code&gt; and &lt;code&gt;FakeScheduler&lt;/code&gt;.&lt;/p&gt;
 &lt;h2 id="fakerepositoryt"&gt;FakeRepository&amp;lt;T&amp;gt;&lt;/h2&gt;
-&lt;p&gt;&lt;code&gt;FakeRepository&amp;lt;T&amp;gt;&lt;/code&gt; is an in-memory implementation of &lt;code&gt;ICrudRepository&amp;lt;T&amp;gt;&lt;/code&gt; and &lt;code&gt;IRangeRepository&amp;lt;T&amp;gt;&lt;/code&gt; (from
-&lt;code&gt;ArturRios.Data&lt;/code&gt;). It stores entities in a backing list so you can exercise services that depend on a
-repository without touching a database. &lt;code&gt;T&lt;/code&gt; must derive from &lt;code&gt;ArturRios.Data.Entity&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;FakeRepository&amp;lt;T&amp;gt;&lt;/code&gt; is an in-memory implementation of &lt;code&gt;IRepository&amp;lt;T&amp;gt;&lt;/code&gt; (from &lt;code&gt;ArturRios.Data.Relational.Core&lt;/code&gt;).
+It stores entities in a backing list so you can exercise services that depend on a repository without touching a
+database. &lt;code&gt;T&lt;/code&gt; must derive from &lt;code&gt;ArturRios.Data.Relational.Core.Entities.Entity&lt;/code&gt;. Every method returns a
+&lt;code&gt;DataOutput&amp;lt;...&amp;gt;&lt;/code&gt;; lookups that find no matching entity return a failed output carrying an error rather than
+throwing.&lt;/p&gt;
 &lt;table&gt;
 &lt;thead&gt;
 &lt;tr&gt;
@@ -235,27 +253,35 @@ repository without touching a database. &lt;code&gt;T&lt;/code&gt; must derive f
 &lt;td&gt;Assigns a fresh identifier (starting at &lt;code&gt;1&lt;/code&gt;), stores the entity, returns the id&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
-&lt;td&gt;&lt;code&gt;GetById(int)&lt;/code&gt;&lt;/td&gt;
-&lt;td&gt;Returns the matching entity, or &lt;code&gt;null&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;GetById(long)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Returns a successful output with the matching entity, or a failed output when the id is unknown&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
 &lt;td&gt;&lt;code&gt;GetAll()&lt;/code&gt;&lt;/td&gt;
-&lt;td&gt;Returns every stored entity as &lt;code&gt;IQueryable&amp;lt;T&amp;gt;&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Returns every stored entity&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;Query()&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Exposes the stored entities as &lt;code&gt;IQueryable&amp;lt;T&amp;gt;&lt;/code&gt;&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
 &lt;td&gt;&lt;code&gt;Update(T)&lt;/code&gt;&lt;/td&gt;
-&lt;td&gt;Copies writable properties (except &lt;code&gt;Id&lt;/code&gt;) onto the stored entity; throws &lt;code&gt;KeyNotFoundException&lt;/code&gt; when the id is unknown&lt;/td&gt;
+&lt;td&gt;Copies writable properties (except &lt;code&gt;Id&lt;/code&gt;) onto the stored entity; returns a failed output when the id is unknown&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
 &lt;td&gt;&lt;code&gt;Delete(T)&lt;/code&gt;&lt;/td&gt;
-&lt;td&gt;Removes the entity with the matching id; throws &lt;code&gt;KeyNotFoundException&lt;/code&gt; when unknown&lt;/td&gt;
+&lt;td&gt;Removes the entity with the matching id; returns a failed output when unknown&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
-&lt;td&gt;&lt;code&gt;UpdateRange(List&amp;lt;T&amp;gt;)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;CreateRange(IEnumerable&amp;lt;T&amp;gt;)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Stores every entity, assigning each a fresh id; returns the assigned ids&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;UpdateRange(IEnumerable&amp;lt;T&amp;gt;)&lt;/code&gt;&lt;/td&gt;
 &lt;td&gt;Updates every entity that exists, silently skipping unknown ids; returns the updated entities&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
-&lt;td&gt;&lt;code&gt;DeleteRange(List&amp;lt;int&amp;gt;)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;&lt;code&gt;DeleteRange(IEnumerable&amp;lt;long&amp;gt;)&lt;/code&gt;&lt;/td&gt;
 &lt;td&gt;Removes every entity whose id is listed; returns the ids that were actually removed&lt;/td&gt;
 &lt;/tr&gt;
 &lt;/tbody&gt;
@@ -268,18 +294,83 @@ repository without touching a database. &lt;code&gt;T&lt;/code&gt; must derive f
 &lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; repository = &lt;span style="color:#66d9ef"&gt;new&lt;/span&gt; FakeRepository&amp;lt;Person&amp;gt;();
 &lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; annId = repository.Create(&lt;span style="color:#66d9ef"&gt;new&lt;/span&gt; Person { Name = &lt;span style="color:#e6db74"&gt;&amp;#34;Ann&amp;#34;&lt;/span&gt;, Age = &lt;span style="color:#ae81ff"&gt;30&lt;/span&gt; }); &lt;span style="color:#75715e"&gt;// annId == 1&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; bobId = repository.Create(&lt;span style="color:#66d9ef"&gt;new&lt;/span&gt; Person { Name = &lt;span style="color:#e6db74"&gt;&amp;#34;Bob&amp;#34;&lt;/span&gt;, Age = &lt;span style="color:#ae81ff"&gt;25&lt;/span&gt; }); &lt;span style="color:#75715e"&gt;// bobId == 2&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; annId = repository.Create(&lt;span style="color:#66d9ef"&gt;new&lt;/span&gt; Person { Name = &lt;span style="color:#e6db74"&gt;&amp;#34;Ann&amp;#34;&lt;/span&gt;, Age = &lt;span style="color:#ae81ff"&gt;30&lt;/span&gt; }).Data; &lt;span style="color:#75715e"&gt;// annId == 1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; bobId = repository.Create(&lt;span style="color:#66d9ef"&gt;new&lt;/span&gt; Person { Name = &lt;span style="color:#e6db74"&gt;&amp;#34;Bob&amp;#34;&lt;/span&gt;, Age = &lt;span style="color:#ae81ff"&gt;25&lt;/span&gt; }).Data; &lt;span style="color:#75715e"&gt;// bobId == 2&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;repository.Update(&lt;span style="color:#66d9ef"&gt;new&lt;/span&gt; Person { Id = annId, Name = &lt;span style="color:#e6db74"&gt;&amp;#34;Ann Smith&amp;#34;&lt;/span&gt;, Age = &lt;span style="color:#ae81ff"&gt;31&lt;/span&gt; });
 &lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; ann = repository.GetById(annId); &lt;span style="color:#75715e"&gt;// Name == &amp;#34;Ann Smith&amp;#34;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; all = repository.GetAll().ToList(); &lt;span style="color:#75715e"&gt;// two people&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; ann = repository.GetById(annId).Data; &lt;span style="color:#75715e"&gt;// Name == &amp;#34;Ann Smith&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; all = repository.GetAll().Data!.ToList(); &lt;span style="color:#75715e"&gt;// two people&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;repository.DeleteRange([annId, bobId]);
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;&lt;code&gt;Update&lt;/code&gt; uses reflection to copy every writable property from the incoming entity onto the stored one, so it
 mirrors the behavior of a real ORM update where the identifier is preserved.&lt;/p&gt;
-&lt;h2 id="fakescheduler"&gt;FakeScheduler&lt;/h2&gt;
+&lt;h2 id="asyncfakerepositoryt"&gt;AsyncFakeRepository&amp;lt;T&amp;gt;&lt;/h2&gt;
+&lt;p&gt;&lt;code&gt;AsyncFakeRepository&amp;lt;T&amp;gt;&lt;/code&gt; is the asynchronous counterpart of &lt;code&gt;FakeRepository&amp;lt;T&amp;gt;&lt;/code&gt;. It implements
+&lt;code&gt;IAsyncRepository&amp;lt;T&amp;gt;&lt;/code&gt; (from &lt;code&gt;ArturRios.Data.Relational.Core&lt;/code&gt;) with the same in-memory storage and semantics, so
+you can exercise services that depend on an async repository without touching a database. &lt;code&gt;T&lt;/code&gt; must derive from
+&lt;code&gt;ArturRios.Data.Relational.Core.Entities.Entity&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Every method returns a &lt;code&gt;Task&amp;lt;DataOutput&amp;lt;...&amp;gt;&amp;gt;&lt;/code&gt; that completes synchronously, and each accepts an optional
+&lt;code&gt;CancellationToken&lt;/code&gt; that is observed before the operation runs (a cancelled token throws
+&lt;code&gt;OperationCanceledException&lt;/code&gt;). &lt;code&gt;Query()&lt;/code&gt; stays synchronous, mirroring the interface.&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Method&lt;/th&gt;
+&lt;th&gt;Behavior&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;CreateAsync(T, CancellationToken)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Assigns a fresh identifier (starting at &lt;code&gt;1&lt;/code&gt;), stores the entity, returns the id&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;GetByIdAsync(long, CancellationToken)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Returns a successful output with the matching entity, or a failed output when the id is unknown&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;GetAllAsync(CancellationToken)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Returns every stored entity&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;Query()&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Exposes the stored entities as &lt;code&gt;IQueryable&amp;lt;T&amp;gt;&lt;/code&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;UpdateAsync(T, CancellationToken)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Copies writable properties (except &lt;code&gt;Id&lt;/code&gt;) onto the stored entity; returns a failed output when the id is unknown&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;DeleteAsync(T, CancellationToken)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Removes the entity with the matching id; returns a failed output when unknown&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;CreateRangeAsync(IEnumerable&amp;lt;T&amp;gt;, CancellationToken)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Stores every entity, assigning each a fresh id; returns the assigned ids&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;UpdateRangeAsync(IEnumerable&amp;lt;T&amp;gt;, CancellationToken)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Updates every entity that exists, silently skipping unknown ids; returns the updated entities&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;code&gt;DeleteRangeAsync(IEnumerable&amp;lt;long&amp;gt;, CancellationToken)&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Removes every entity whose id is listed; returns the ids that were actually removed&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-csharp" data-lang="csharp"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; repository = &lt;span style="color:#66d9ef"&gt;new&lt;/span&gt; AsyncFakeRepository&amp;lt;Person&amp;gt;();
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; annId = (&lt;span style="color:#66d9ef"&gt;await&lt;/span&gt; repository.CreateAsync(&lt;span style="color:#66d9ef"&gt;new&lt;/span&gt; Person { Name = &lt;span style="color:#e6db74"&gt;&amp;#34;Ann&amp;#34;&lt;/span&gt;, Age = &lt;span style="color:#ae81ff"&gt;30&lt;/span&gt; })).Data; &lt;span style="color:#75715e"&gt;// annId == 1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; bobId = (&lt;span style="color:#66d9ef"&gt;await&lt;/span&gt; repository.CreateAsync(&lt;span style="color:#66d9ef"&gt;new&lt;/span&gt; Person { Name = &lt;span style="color:#e6db74"&gt;&amp;#34;Bob&amp;#34;&lt;/span&gt;, Age = &lt;span style="color:#ae81ff"&gt;25&lt;/span&gt; })).Data; &lt;span style="color:#75715e"&gt;// bobId == 2&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;await&lt;/span&gt; repository.UpdateAsync(&lt;span style="color:#66d9ef"&gt;new&lt;/span&gt; Person { Id = annId, Name = &lt;span style="color:#e6db74"&gt;&amp;#34;Ann Smith&amp;#34;&lt;/span&gt;, Age = &lt;span style="color:#ae81ff"&gt;31&lt;/span&gt; });
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; ann = (&lt;span style="color:#66d9ef"&gt;await&lt;/span&gt; repository.GetByIdAsync(annId)).Data; &lt;span style="color:#75715e"&gt;// Name == &amp;#34;Ann Smith&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; all = (&lt;span style="color:#66d9ef"&gt;await&lt;/span&gt; repository.GetAllAsync()).Data!.ToList(); &lt;span style="color:#75715e"&gt;// two people&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;await&lt;/span&gt; repository.DeleteRangeAsync([annId, bobId]);
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id="fakescheduler"&gt;FakeScheduler&lt;/h2&gt;
 &lt;p&gt;&lt;code&gt;FakeScheduler&lt;/code&gt; simulates a scheduled (delayed) dispatch of a command or query through an
 &lt;code&gt;ArturRios.Mediator.CommandQueryMediator&lt;/code&gt;. It waits for a configurable delay and then dispatches, which is
 useful for testing code paths that would otherwise run on a timer or background schedule.&lt;/p&gt;
