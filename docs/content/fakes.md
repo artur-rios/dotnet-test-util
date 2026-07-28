@@ -7,23 +7,27 @@ nav_next_label = "Web API Testing"
 nav_next_url   = "/dotnet-test-util/web-api-testing"
 +++
 
-This page covers the in-memory test doubles: `FakeRepository<T>` and `FakeScheduler`.
+This page covers the in-memory test doubles: `FakeRepository<T>`, `AsyncFakeRepository<T>` and `FakeScheduler`.
 
 ## FakeRepository&lt;T&gt;
 
-`FakeRepository<T>` is an in-memory implementation of `ICrudRepository<T>` and `IRangeRepository<T>` (from
-`ArturRios.Data`). It stores entities in a backing list so you can exercise services that depend on a
-repository without touching a database. `T` must derive from `ArturRios.Data.Entity`.
+`FakeRepository<T>` is an in-memory implementation of `IRepository<T>` (from `ArturRios.Data.Relational.Core`).
+It stores entities in a backing list so you can exercise services that depend on a repository without touching a
+database. `T` must derive from `ArturRios.Data.Relational.Core.Entities.Entity`. Every method returns a
+`DataOutput<...>`; lookups that find no matching entity return a failed output carrying an error rather than
+throwing.
 
 | Method | Behavior |
 |---|---|
 | `Create(T)` | Assigns a fresh identifier (starting at `1`), stores the entity, returns the id |
-| `GetById(int)` | Returns the matching entity, or `null` |
-| `GetAll()` | Returns every stored entity as `IQueryable<T>` |
-| `Update(T)` | Copies writable properties (except `Id`) onto the stored entity; throws `KeyNotFoundException` when the id is unknown |
-| `Delete(T)` | Removes the entity with the matching id; throws `KeyNotFoundException` when unknown |
-| `UpdateRange(List<T>)` | Updates every entity that exists, silently skipping unknown ids; returns the updated entities |
-| `DeleteRange(List<int>)` | Removes every entity whose id is listed; returns the ids that were actually removed |
+| `GetById(long)` | Returns a successful output with the matching entity, or a failed output when the id is unknown |
+| `GetAll()` | Returns every stored entity |
+| `Query()` | Exposes the stored entities as `IQueryable<T>` |
+| `Update(T)` | Copies writable properties (except `Id`) onto the stored entity; returns a failed output when the id is unknown |
+| `Delete(T)` | Removes the entity with the matching id; returns a failed output when unknown |
+| `CreateRange(IEnumerable<T>)` | Stores every entity, assigning each a fresh id; returns the assigned ids |
+| `UpdateRange(IEnumerable<T>)` | Updates every entity that exists, silently skipping unknown ids; returns the updated entities |
+| `DeleteRange(IEnumerable<long>)` | Removes every entity whose id is listed; returns the ids that were actually removed |
 
 ```csharp
 public class Person : Entity
@@ -34,19 +38,56 @@ public class Person : Entity
 
 var repository = new FakeRepository<Person>();
 
-var annId = repository.Create(new Person { Name = "Ann", Age = 30 });   // annId == 1
-var bobId = repository.Create(new Person { Name = "Bob", Age = 25 });   // bobId == 2
+var annId = repository.Create(new Person { Name = "Ann", Age = 30 }).Data;   // annId == 1
+var bobId = repository.Create(new Person { Name = "Bob", Age = 25 }).Data;   // bobId == 2
 
 repository.Update(new Person { Id = annId, Name = "Ann Smith", Age = 31 });
 
-var ann = repository.GetById(annId);   // Name == "Ann Smith"
-var all = repository.GetAll().ToList(); // two people
+var ann = repository.GetById(annId).Data;      // Name == "Ann Smith"
+var all = repository.GetAll().Data!.ToList();  // two people
 
 repository.DeleteRange([annId, bobId]);
 ```
 
 `Update` uses reflection to copy every writable property from the incoming entity onto the stored one, so it
 mirrors the behavior of a real ORM update where the identifier is preserved.
+
+## AsyncFakeRepository&lt;T&gt;
+
+`AsyncFakeRepository<T>` is the asynchronous counterpart of `FakeRepository<T>`. It implements
+`IAsyncRepository<T>` (from `ArturRios.Data.Relational.Core`) with the same in-memory storage and semantics, so
+you can exercise services that depend on an async repository without touching a database. `T` must derive from
+`ArturRios.Data.Relational.Core.Entities.Entity`.
+
+Every method returns a `Task<DataOutput<...>>` that completes synchronously, and each accepts an optional
+`CancellationToken` that is observed before the operation runs (a cancelled token throws
+`OperationCanceledException`). `Query()` stays synchronous, mirroring the interface.
+
+| Method | Behavior |
+|---|---|
+| `CreateAsync(T, CancellationToken)` | Assigns a fresh identifier (starting at `1`), stores the entity, returns the id |
+| `GetByIdAsync(long, CancellationToken)` | Returns a successful output with the matching entity, or a failed output when the id is unknown |
+| `GetAllAsync(CancellationToken)` | Returns every stored entity |
+| `Query()` | Exposes the stored entities as `IQueryable<T>` |
+| `UpdateAsync(T, CancellationToken)` | Copies writable properties (except `Id`) onto the stored entity; returns a failed output when the id is unknown |
+| `DeleteAsync(T, CancellationToken)` | Removes the entity with the matching id; returns a failed output when unknown |
+| `CreateRangeAsync(IEnumerable<T>, CancellationToken)` | Stores every entity, assigning each a fresh id; returns the assigned ids |
+| `UpdateRangeAsync(IEnumerable<T>, CancellationToken)` | Updates every entity that exists, silently skipping unknown ids; returns the updated entities |
+| `DeleteRangeAsync(IEnumerable<long>, CancellationToken)` | Removes every entity whose id is listed; returns the ids that were actually removed |
+
+```csharp
+var repository = new AsyncFakeRepository<Person>();
+
+var annId = (await repository.CreateAsync(new Person { Name = "Ann", Age = 30 })).Data;   // annId == 1
+var bobId = (await repository.CreateAsync(new Person { Name = "Bob", Age = 25 })).Data;   // bobId == 2
+
+await repository.UpdateAsync(new Person { Id = annId, Name = "Ann Smith", Age = 31 });
+
+var ann = (await repository.GetByIdAsync(annId)).Data;      // Name == "Ann Smith"
+var all = (await repository.GetAllAsync()).Data!.ToList();  // two people
+
+await repository.DeleteRangeAsync([annId, bobId]);
+```
 
 ## FakeScheduler
 

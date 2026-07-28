@@ -16,7 +16,7 @@ dotnet add package ArturRios.Util.Test
 
 The package targets **net10.0** and builds on other `ArturRios.*` packages
 ([`ArturRios.Util`](https://www.nuget.org/packages/ArturRios.Util),
-[`ArturRios.Data`](https://www.nuget.org/packages/ArturRios.Data),
+[`ArturRios.Data.Relational.Core`](https://www.nuget.org/packages/ArturRios.Data.Relational.Core),
 [`ArturRios.Mediator`](https://www.nuget.org/packages/ArturRios.Mediator),
 [`ArturRios.Configuration`](https://www.nuget.org/packages/ArturRios.Configuration) and
 [`ArturRios.Util.WebApi`](https://www.nuget.org/packages/ArturRios.Util.WebApi)) plus `xunit` and
@@ -28,7 +28,8 @@ The package targets **net10.0** and builds on other `ArturRios.*` packages
 |---|---|
 | `CustomAssert` | Extra xUnit assertions for null/empty checks on collections and strings |
 | `UnitFactAttribute`, `UnitTheoryAttribute`, `FunctionalFactAttribute`, `FunctionalTheoryAttribute` | Test attributes that can skip tests per environment or on a condition |
-| `FakeRepository<T>` | In-memory `ICrudRepository<T>` / `IRangeRepository<T>` implementation |
+| `FakeRepository<T>` | In-memory `IRepository<T>` implementation |
+| `AsyncFakeRepository<T>` | In-memory `IAsyncRepository<T>` implementation with cancellation support |
 | `FakeScheduler` | Simulates a delayed command/query dispatch through a `CommandQueryMediator` |
 | `WebApiTest<T>` | Base class for functional web API tests using an in-memory host |
 | `TestException` | Exception raised by the utilities when a test-support operation fails |
@@ -61,8 +62,8 @@ public void Charges_card() { /* ... */ }
 ```csharp
 var repository = new FakeRepository<Person>();
 
-var id = repository.Create(new Person { Name = "Ann" });   // ids start at 1
-var person = repository.GetById(id);
+var id = repository.Create(new Person { Name = "Ann" }).Data;   // ids start at 1
+var person = repository.GetById(id).Data;
 repository.Update(new Person { Id = id, Name = "Ann Smith" });
 repository.Delete(new Person { Id = id });
 ```

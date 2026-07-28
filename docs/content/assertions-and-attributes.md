@@ -39,14 +39,15 @@ The collection overloads treat `null` and empty the same way, so a `null` refere
 ## Environment-aware attributes
 
 Four attributes wrap xUnit's `[Fact]` and `[Theory]` so a test can be skipped based on the active
-environment or an explicit condition:
+environment or an explicit condition. Each also stamps a `Category` trait (`Unit` or `Functional`), so the
+tests can be filtered by type, for example `dotnet test --filter "Category=Unit"`:
 
-| Attribute | Wraps | Intended use |
-|---|---|---|
-| `UnitFactAttribute` | `[Fact]` | Unit test |
-| `UnitTheoryAttribute` | `[Theory]` | Data-driven unit test |
-| `FunctionalFactAttribute` | `[Fact]` | Functional / integration test |
-| `FunctionalTheoryAttribute` | `[Theory]` | Data-driven functional test |
+| Attribute | Wraps | Intended use | `Category` trait |
+|---|---|---|---|
+| `UnitFactAttribute` | `[Fact]` | Unit test | `Unit` |
+| `UnitTheoryAttribute` | `[Theory]` | Data-driven unit test | `Unit` |
+| `FunctionalFactAttribute` | `[Fact]` | Functional / integration test | `Functional` |
+| `FunctionalTheoryAttribute` | `[Theory]` | Data-driven functional test | `Functional` |
 
 All four share the same two optional parameters:
 
