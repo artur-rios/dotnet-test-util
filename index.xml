@@ -312,7 +312,9 @@ you can exercise services that depend on an async repository without touching a 
 &lt;code&gt;ArturRios.Data.Relational.Core.Entities.Entity&lt;/code&gt;.&lt;/p&gt;
 &lt;p&gt;Every method returns a &lt;code&gt;Task&amp;lt;DataOutput&amp;lt;...&amp;gt;&amp;gt;&lt;/code&gt; that completes synchronously, and each accepts an optional
 &lt;code&gt;CancellationToken&lt;/code&gt; that is observed before the operation runs (a cancelled token throws
-&lt;code&gt;OperationCanceledException&lt;/code&gt;). &lt;code&gt;Query()&lt;/code&gt; stays synchronous, mirroring the interface.&lt;/p&gt;
+&lt;code&gt;OperationCanceledException&lt;/code&gt;). &lt;code&gt;Query()&lt;/code&gt; keeps the synchronous signature the interface declares, but the
+&lt;code&gt;IQueryable&amp;lt;T&amp;gt;&lt;/code&gt; it returns is backed by an async query provider, so EF Core&amp;rsquo;s async operators
+(&lt;code&gt;ToListAsync&lt;/code&gt;, &lt;code&gt;FirstOrDefaultAsync&lt;/code&gt;, &lt;code&gt;CountAsync&lt;/code&gt;, …) can be composed on top of it.&lt;/p&gt;
 &lt;table&gt;
 &lt;thead&gt;
 &lt;tr&gt;
@@ -335,7 +337,7 @@ you can exercise services that depend on an async repository without touching a 
 &lt;/tr&gt;
 &lt;tr&gt;
 &lt;td&gt;&lt;code&gt;Query()&lt;/code&gt;&lt;/td&gt;
-&lt;td&gt;Exposes the stored entities as &lt;code&gt;IQueryable&amp;lt;T&amp;gt;&lt;/code&gt;&lt;/td&gt;
+&lt;td&gt;Exposes the stored entities as an async-capable &lt;code&gt;IQueryable&amp;lt;T&amp;gt;&lt;/code&gt; (supports &lt;code&gt;ToListAsync&lt;/code&gt;, &lt;code&gt;FirstOrDefaultAsync&lt;/code&gt;, …)&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
 &lt;td&gt;&lt;code&gt;UpdateAsync(T, CancellationToken)&lt;/code&gt;&lt;/td&gt;
@@ -368,6 +370,9 @@ you can exercise services that depend on an async repository without touching a 
 &lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; ann = (&lt;span style="color:#66d9ef"&gt;await&lt;/span&gt; repository.GetByIdAsync(annId)).Data; &lt;span style="color:#75715e"&gt;// Name == &amp;#34;Ann Smith&amp;#34;&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; all = (&lt;span style="color:#66d9ef"&gt;await&lt;/span&gt; repository.GetAllAsync()).Data!.ToList(); &lt;span style="color:#75715e"&gt;// two people&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#75715e"&gt;// Query() composes with EF Core&amp;#39;s async operators:&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; adults = &lt;span style="color:#66d9ef"&gt;await&lt;/span&gt; repository.Query().Where(p =&amp;gt; p.Age &amp;gt;= &lt;span style="color:#ae81ff"&gt;18&lt;/span&gt;).ToListAsync();
 &lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;await&lt;/span&gt; repository.DeleteRangeAsync([annId, bobId]);
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id="fakescheduler"&gt;FakeScheduler&lt;/h2&gt;
