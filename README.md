@@ -29,7 +29,7 @@ The package targets **net10.0** and builds on other `ArturRios.*` packages
 | `CustomAssert` | Extra xUnit assertions for null/empty checks on collections and strings |
 | `UnitFactAttribute`, `UnitTheoryAttribute`, `FunctionalFactAttribute`, `FunctionalTheoryAttribute` | Test attributes that can skip tests per environment or on a condition |
 | `FakeRepository<T>` | In-memory `IRepository<T>` implementation |
-| `AsyncFakeRepository<T>` | In-memory `IAsyncRepository<T>` implementation with cancellation support |
+| `AsyncFakeRepository<T>` | In-memory `IAsyncRepository<T>` implementation with cancellation support and async-capable `Query()` |
 | `FakeScheduler` | Simulates a delayed command/query dispatch through a `CommandQueryMediator` |
 | `WebApiTest<T>` | Base class for functional web API tests using an in-memory host |
 | `TestException` | Exception raised by the utilities when a test-support operation fails |

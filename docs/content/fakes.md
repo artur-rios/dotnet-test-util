@@ -61,14 +61,16 @@ you can exercise services that depend on an async repository without touching a 
 
 Every method returns a `Task<DataOutput<...>>` that completes synchronously, and each accepts an optional
 `CancellationToken` that is observed before the operation runs (a cancelled token throws
-`OperationCanceledException`). `Query()` stays synchronous, mirroring the interface.
+`OperationCanceledException`). `Query()` keeps the synchronous signature the interface declares, but the
+`IQueryable<T>` it returns is backed by an async query provider, so EF Core's async operators
+(`ToListAsync`, `FirstOrDefaultAsync`, `CountAsync`, …) can be composed on top of it.
 
 | Method | Behavior |
 |---|---|
 | `CreateAsync(T, CancellationToken)` | Assigns a fresh identifier (starting at `1`), stores the entity, returns the id |
 | `GetByIdAsync(long, CancellationToken)` | Returns a successful output with the matching entity, or a failed output when the id is unknown |
 | `GetAllAsync(CancellationToken)` | Returns every stored entity |
-| `Query()` | Exposes the stored entities as `IQueryable<T>` |
+| `Query()` | Exposes the stored entities as an async-capable `IQueryable<T>` (supports `ToListAsync`, `FirstOrDefaultAsync`, …) |
 | `UpdateAsync(T, CancellationToken)` | Copies writable properties (except `Id`) onto the stored entity; returns a failed output when the id is unknown |
 | `DeleteAsync(T, CancellationToken)` | Removes the entity with the matching id; returns a failed output when unknown |
 | `CreateRangeAsync(IEnumerable<T>, CancellationToken)` | Stores every entity, assigning each a fresh id; returns the assigned ids |
@@ -85,6 +87,9 @@ await repository.UpdateAsync(new Person { Id = annId, Name = "Ann Smith", Age = 
 
 var ann = (await repository.GetByIdAsync(annId)).Data;      // Name == "Ann Smith"
 var all = (await repository.GetAllAsync()).Data!.ToList();  // two people
+
+// Query() composes with EF Core's async operators:
+var adults = await repository.Query().Where(p => p.Age >= 18).ToListAsync();
 
 await repository.DeleteRangeAsync([annId, bobId]);
 ```

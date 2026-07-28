@@ -18,8 +18,11 @@ public class AsyncFakeRepository<T> : IAsyncRepository<T> where T : Entity
     private long _nextId = 1;
 
     /// <summary>Exposes the stored entities as a queryable sequence.</summary>
-    /// <returns>A queryable over every stored entity.</returns>
-    public IQueryable<T> Query() => _items.AsQueryable();
+    /// <returns>
+    /// A queryable over every stored entity backed by an async query provider, so EF Core's async operators
+    /// (<c>ToListAsync</c>, <c>FirstOrDefaultAsync</c>, <c>CountAsync</c>, …) can be composed on top of it.
+    /// </returns>
+    public IQueryable<T> Query() => new TestAsyncEnumerable<T>(_items);
 
     /// <summary>Returns all stored entities.</summary>
     /// <param name="ct">A token to observe for cancellation.</param>

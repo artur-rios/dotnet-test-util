@@ -21,7 +21,7 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>utilities, test, .net</PackageTags>
     <RepositoryUrl>https://github.com/artur-rios/dotnet-test-util</RepositoryUrl>
-    <Version>2.1.0</Version>
+    <Version>2.2.0</Version>
   </PropertyGroup>
   <ItemGroup>
     <None Include="..\README.md" Pack="true" PackagePath="" />
@@ -33,6 +33,7 @@
     <PackageReference Include="ArturRios.Util" Version="1.4.2" />
     <PackageReference Include="ArturRios.Util.WebApi" Version="2.1.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.10" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.10" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="xunit" Version="2.9.3" />
   </ItemGroup>

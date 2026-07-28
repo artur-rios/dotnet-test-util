@@ -1,4 +1,5 @@
 using ArturRios.Util.Test.Mock;
+using Microsoft.EntityFrameworkCore;
 
 namespace ArturRios.Util.Test.Tests.Mock;
 
@@ -66,6 +67,43 @@ public class AsyncFakeRepositoryTests
         var all = repository.Query().ToList();
 
         Assert.Equal(2, all.Count);
+    }
+
+    [Fact]
+    public async Task Query_SupportsToListAsync()
+    {
+        var repository = NewRepository();
+        await repository.CreateAsync(new Person { Name = "Ann", Age = 30 });
+        await repository.CreateAsync(new Person { Name = "Bob", Age = 25 });
+
+        var adults = await repository.Query().Where(p => p.Age >= 18).ToListAsync();
+
+        Assert.Equal(2, adults.Count);
+    }
+
+    [Fact]
+    public async Task Query_SupportsFirstOrDefaultAsync()
+    {
+        var repository = NewRepository();
+        await repository.CreateAsync(new Person { Name = "Ann" });
+        await repository.CreateAsync(new Person { Name = "Bob" });
+
+        var bob = await repository.Query().FirstOrDefaultAsync(p => p.Name == "Bob");
+
+        Assert.NotNull(bob);
+        Assert.Equal("Bob", bob.Name);
+    }
+
+    [Fact]
+    public async Task Query_SupportsCountAsync()
+    {
+        var repository = NewRepository();
+        await repository.CreateAsync(new Person { Name = "Ann", Age = 30 });
+        await repository.CreateAsync(new Person { Name = "Bob", Age = 15 });
+
+        var adultCount = await repository.Query().CountAsync(p => p.Age >= 18);
+
+        Assert.Equal(1, adultCount);
     }
 
     [Fact]
