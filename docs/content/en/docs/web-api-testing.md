@@ -1,11 +1,9 @@
-+++
-title = "Web API Testing"
-show_nav       = true
-nav_back_label = "Fakes"
-nav_back_url   = "/dotnet-test-util/fakes"
-nav_next_label = "Home"
-nav_next_url   = "/dotnet-test-util"
-+++
+---
+title: Web API Testing
+weight: 30
+description: >-
+  `WebApiTest<T>` is a base class for functional web API tests. It hosts your API in memory with `WebApplicationFactory<T>` and exposes an `HttpGateway` plus...
+---
 
 `WebApiTest<T>` is a base class for functional web API tests. It hosts your API in memory with
 `WebApplicationFactory<T>` and exposes an `HttpGateway` plus helpers for authenticating and authorizing

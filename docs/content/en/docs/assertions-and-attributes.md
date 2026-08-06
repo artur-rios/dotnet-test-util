@@ -1,11 +1,9 @@
-+++
-title = "Assertions & Attributes"
-show_nav       = true
-nav_back_label = "Home"
-nav_back_url   = "/dotnet-test-util"
-nav_next_label = "Fakes"
-nav_next_url   = "/dotnet-test-util/fakes"
-+++
+---
+title: Assertions & Attributes
+weight: 10
+description: >-
+  This page covers `CustomAssert` and the environment-aware test attributes.
+---
 
 This page covers `CustomAssert` and the environment-aware test attributes.
 

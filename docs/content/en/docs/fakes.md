@@ -1,11 +1,9 @@
-+++
-title = "Fakes"
-show_nav       = true
-nav_back_label = "Assertions & Attributes"
-nav_back_url   = "/dotnet-test-util/assertions-and-attributes"
-nav_next_label = "Web API Testing"
-nav_next_url   = "/dotnet-test-util/web-api-testing"
-+++
+---
+title: Fakes
+weight: 20
+description: >-
+  This page covers the in-memory test doubles: `FakeRepository<T>`, `AsyncFakeRepository<T>` and `FakeScheduler`.
+---
 
 This page covers the in-memory test doubles: `FakeRepository<T>`, `AsyncFakeRepository<T>` and `FakeScheduler`.
 

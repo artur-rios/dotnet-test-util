@@ -1,8 +1,10 @@
-+++
-title = "Dotnet Test Util"
-+++
-
-# Documentation
+---
+title: Documentation
+linkTitle: Documentation
+weight: 20
+description: >-
+  `ArturRios.Util.Test` is a small .NET library of test-support utilities for xUnit projects. It bundles the helpers that come up again and again when testing...
+---
 
 `ArturRios.Util.Test` is a small .NET library of test-support utilities for xUnit projects. It bundles the
 helpers that come up again and again when testing services and web APIs: extra assertions, environment-aware
