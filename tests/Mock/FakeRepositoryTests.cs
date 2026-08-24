@@ -2,12 +2,13 @@ using ArturRios.Util.Test.Mock;
 
 namespace ArturRios.Util.Test.Tests.Mock;
 
+[Trait("Category", "Unit")]
 public class FakeRepositoryTests
 {
     private static FakeRepository<Person> NewRepository() => new();
 
     [Fact]
-    public void Create_AssignsSequentialIdsStartingAtOne()
+    public void GivenAnEmptyFake_WhenCreatingEntities_ThenIdsAreAssignedSequentiallyFromOne()
     {
         var repository = NewRepository();
 
@@ -20,7 +21,7 @@ public class FakeRepositoryTests
     }
 
     [Fact]
-    public void GetById_ReturnsMatchingEntity()
+    public void GivenAStoredEntity_WhenFetchingItById_ThenItComesBack()
     {
         var repository = NewRepository();
         var id = repository.Create(new Person { Name = "Ann", Age = 30 }).Data;
@@ -33,7 +34,7 @@ public class FakeRepositoryTests
     }
 
     [Fact]
-    public void GetById_WithUnknownId_ReturnsFailedOutput()
+    public void GivenAnUnknownId_WhenFetchingById_ThenAFailedOutputComesBack()
     {
         var repository = NewRepository();
 
@@ -44,7 +45,7 @@ public class FakeRepositoryTests
     }
 
     [Fact]
-    public void GetAll_ReturnsAllStoredEntities()
+    public void GivenStoredEntities_WhenFetchingAll_ThenEveryOneComesBack()
     {
         var repository = NewRepository();
         repository.Create(new Person { Name = "Ann" });
@@ -57,7 +58,7 @@ public class FakeRepositoryTests
     }
 
     [Fact]
-    public void Query_ReturnsAllStoredEntities()
+    public void GivenStoredEntities_WhenQuerying_ThenEveryOneComesBack()
     {
         var repository = NewRepository();
         repository.Create(new Person { Name = "Ann" });
@@ -69,7 +70,7 @@ public class FakeRepositoryTests
     }
 
     [Fact]
-    public void Update_CopiesWritablePropertiesButKeepsId()
+    public void GivenAStoredEntity_WhenUpdated_ThenWritablePropertiesAreCopiedAndTheIdIsKept()
     {
         var repository = NewRepository();
         var id = repository.Create(new Person { Name = "Ann", Age = 30 }).Data;
@@ -85,7 +86,7 @@ public class FakeRepositoryTests
     }
 
     [Fact]
-    public void Update_WithUnknownId_ReturnsFailedOutput()
+    public void GivenAnUnknownId_WhenUpdating_ThenAFailedOutputComesBack()
     {
         var repository = NewRepository();
 
@@ -96,7 +97,7 @@ public class FakeRepositoryTests
     }
 
     [Fact]
-    public void Delete_RemovesEntityAndReturnsId()
+    public void GivenAStoredEntity_WhenDeleted_ThenItIsRemovedAndItsIdComesBack()
     {
         var repository = NewRepository();
         var id = repository.Create(new Person { Name = "Ann" }).Data;
@@ -109,7 +110,7 @@ public class FakeRepositoryTests
     }
 
     [Fact]
-    public void Delete_WithUnknownId_ReturnsFailedOutput()
+    public void GivenAnUnknownId_WhenDeleting_ThenAFailedOutputComesBack()
     {
         var repository = NewRepository();
 
@@ -119,7 +120,7 @@ public class FakeRepositoryTests
     }
 
     [Fact]
-    public void CreateRange_StoresEntitiesAndReturnsAssignedIds()
+    public void GivenSeveralEntities_WhenCreatingARange_ThenTheyAreStoredAndTheirIdsComeBack()
     {
         var repository = NewRepository();
 
@@ -134,7 +135,7 @@ public class FakeRepositoryTests
     }
 
     [Fact]
-    public void UpdateRange_UpdatesExistingEntitiesAndReturnsThem()
+    public void GivenStoredEntities_WhenUpdatingARange_ThenTheyAreUpdatedAndComeBack()
     {
         var repository = NewRepository();
         var firstId = repository.Create(new Person { Name = "Ann" }).Data;
@@ -152,7 +153,7 @@ public class FakeRepositoryTests
     }
 
     [Fact]
-    public void UpdateRange_SkipsUnknownEntities()
+    public void GivenARangeContainingUnknownEntities_WhenUpdating_ThenTheUnknownOnesAreSkipped()
     {
         var repository = NewRepository();
         var id = repository.Create(new Person { Name = "Ann" }).Data;
@@ -169,7 +170,7 @@ public class FakeRepositoryTests
     }
 
     [Fact]
-    public void DeleteRange_RemovesMatchingEntitiesAndReturnsIds()
+    public void GivenStoredEntities_WhenDeletingARange_ThenTheMatchingOnesAreRemovedAndTheirIdsComeBack()
     {
         var repository = NewRepository();
         var firstId = repository.Create(new Person { Name = "Ann" }).Data;

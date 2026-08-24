@@ -4,42 +4,43 @@ using Xunit.Sdk;
 
 namespace ArturRios.Util.Test.Tests;
 
+[Trait("Category", "Unit")]
 public class CustomAssertTests
 {
     // --- IEnumerable overloads ---
 
     [Fact]
-    public void NullOrEmpty_WithNullCollection_Passes()
+    public void GivenANullCollection_WhenAssertingItIsNullOrEmpty_ThenTheAssertionPasses()
     {
         CustomAssert.NullOrEmpty((IEnumerable?)null);
     }
 
     [Fact]
-    public void NullOrEmpty_WithEmptyCollection_Passes()
+    public void GivenAnEmptyCollection_WhenAssertingItIsNullOrEmpty_ThenTheAssertionPasses()
     {
         CustomAssert.NullOrEmpty(Array.Empty<int>());
     }
 
     [Fact]
-    public void NullOrEmpty_WithNonEmptyCollection_Fails()
+    public void GivenANonEmptyCollection_WhenAssertingItIsNullOrEmpty_ThenTheAssertionFails()
     {
         Assert.Throws<TrueException>(() => CustomAssert.NullOrEmpty(new[] { 1 }));
     }
 
     [Fact]
-    public void NotNullOrEmpty_WithNonEmptyCollection_Passes()
+    public void GivenANonEmptyCollection_WhenAssertingItIsNotNullOrEmpty_ThenTheAssertionPasses()
     {
         CustomAssert.NotNullOrEmpty(new[] { 1 });
     }
 
     [Fact]
-    public void NotNullOrEmpty_WithNullCollection_Fails()
+    public void GivenANullCollection_WhenAssertingItIsNotNullOrEmpty_ThenTheAssertionFails()
     {
         Assert.Throws<TrueException>(() => CustomAssert.NotNullOrEmpty((IEnumerable?)null));
     }
 
     [Fact]
-    public void NotNullOrEmpty_WithEmptyCollection_Fails()
+    public void GivenAnEmptyCollection_WhenAssertingItIsNotNullOrEmpty_ThenTheAssertionFails()
     {
         Assert.Throws<TrueException>(() => CustomAssert.NotNullOrEmpty(Array.Empty<int>()));
     }
@@ -49,19 +50,19 @@ public class CustomAssertTests
     [Theory]
     [InlineData(null)]
     [InlineData("")]
-    public void NullOrEmpty_String_Passes(string? value)
+    public void GivenAnEmptyString_WhenAssertingItIsNullOrEmpty_ThenTheAssertionPasses(string? value)
     {
         CustomAssert.NullOrEmpty(value);
     }
 
     [Fact]
-    public void NullOrEmpty_String_WithWhitespace_Fails()
+    public void GivenAWhitespaceString_WhenAssertingItIsNullOrEmpty_ThenTheAssertionFails()
     {
         Assert.Throws<TrueException>(() => CustomAssert.NullOrEmpty(" "));
     }
 
     [Fact]
-    public void NotNullOrEmpty_String_Passes()
+    public void GivenANonEmptyString_WhenAssertingItIsNotNullOrEmpty_ThenTheAssertionPasses()
     {
         CustomAssert.NotNullOrEmpty("value");
     }
@@ -69,7 +70,7 @@ public class CustomAssertTests
     [Theory]
     [InlineData(null)]
     [InlineData("")]
-    public void NotNullOrEmpty_String_Fails(string? value)
+    public void GivenAnEmptyString_WhenAssertingItIsNotNullOrEmpty_ThenTheAssertionFails(string? value)
     {
         Assert.Throws<FalseException>(() => CustomAssert.NotNullOrEmpty(value));
     }
@@ -78,19 +79,19 @@ public class CustomAssertTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void NullOrWhiteSpace_Passes(string? value)
+    public void GivenAWhitespaceString_WhenAssertingItIsNullOrWhiteSpace_ThenTheAssertionPasses(string? value)
     {
         CustomAssert.NullOrWhiteSpace(value);
     }
 
     [Fact]
-    public void NullOrWhiteSpace_WithContent_Fails()
+    public void GivenAStringWithContent_WhenAssertingItIsNullOrWhiteSpace_ThenTheAssertionFails()
     {
         Assert.Throws<TrueException>(() => CustomAssert.NullOrWhiteSpace("x"));
     }
 
     [Fact]
-    public void NotNullOrWhiteSpace_Passes()
+    public void GivenAStringWithContent_WhenAssertingItIsNotNullOrWhiteSpace_ThenTheAssertionPasses()
     {
         CustomAssert.NotNullOrWhiteSpace("x");
     }
@@ -99,7 +100,7 @@ public class CustomAssertTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void NotNullOrWhiteSpace_Fails(string? value)
+    public void GivenAWhitespaceString_WhenAssertingItIsNotNullOrWhiteSpace_ThenTheAssertionFails(string? value)
     {
         Assert.Throws<FalseException>(() => CustomAssert.NotNullOrWhiteSpace(value));
     }
