@@ -1,4 +1,4 @@
-using ArturRios.Data.Relational.Core.Entities;
+﻿using ArturRios.Data.Relational.Core.Entities;
 using ArturRios.Mediator.Command;
 using ArturRios.Mediator.Command.Interfaces;
 using ArturRios.Mediator.Query;
@@ -32,7 +32,9 @@ public class RecordingCommandHandler : ICommandHandlerAsync<PingCommand, PingCom
     public bool WasCalled { get; private set; }
     public PingCommand? Received { get; private set; }
 
-    public async Task<DataOutput<PingCommandOutput?>> HandleAsync(PingCommand command)
+    public async Task<DataOutput<PingCommandOutput?>> HandleAsync(
+        PingCommand command,
+        CancellationToken cancellationToken = default)
     {
         await Task.Yield();
 
@@ -61,7 +63,9 @@ public class RecordingQueryHandler : IQueryHandlerAsync<PingQuery, PingQueryOutp
     public bool WasCalled { get; private set; }
     public PingQuery? Received { get; private set; }
 
-    public async Task<DataOutput<PingQueryOutput?>> HandleAsync(PingQuery query)
+    public async Task<DataOutput<PingQueryOutput?>> HandleAsync(
+        PingQuery query,
+        CancellationToken cancellationToken = default)
     {
         await Task.Yield();
 
