@@ -4,6 +4,7 @@ using Xunit.Sdk;
 
 namespace ArturRios.Util.Test.Tests.Attributes;
 
+[Trait("Category", "Unit")]
 public class TestTypeTraitTests
 {
     // Nested private class: xUnit does not discover its methods as tests, so the sample
@@ -35,7 +36,7 @@ public class TestTypeTraitTests
     [InlineData(nameof(Marked.UnitTheory), TestType.Unit)]
     [InlineData(nameof(Marked.FunctionalFact), TestType.Functional)]
     [InlineData(nameof(Marked.FunctionalTheory), TestType.Functional)]
-    public void Attribute_ExposesExpectedTestType(string methodName, TestType expected)
+    public void GivenEachCustomAttribute_WhenInspected_ThenItExposesItsTestType(string methodName, TestType expected)
     {
         var attribute = GetTestAttribute(methodName);
 
@@ -49,7 +50,7 @@ public class TestTypeTraitTests
     [InlineData(nameof(Marked.UnitTheory), "Unit")]
     [InlineData(nameof(Marked.FunctionalFact), "Functional")]
     [InlineData(nameof(Marked.FunctionalTheory), "Functional")]
-    public void Discoverer_YieldsCategoryTrait(string methodName, string expectedValue)
+    public void GivenACustomAttribute_WhenTheDiscovererRunsOverIt_ThenACategoryTraitIsYielded(string methodName, string expectedValue)
     {
         var attribute = GetTestAttribute(methodName);
 

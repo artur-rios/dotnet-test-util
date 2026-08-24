@@ -9,6 +9,7 @@ namespace ArturRios.Util.Test.Tests;
 /// <summary>
 /// Exercises <see cref="WebApiTest{T}"/> against the in-memory SUT web app defined in the <c>sut</c> project.
 /// </summary>
+[Trait("Category", "Functional")]
 public class WebApiTestTests : WebApiTest<Program>
 {
     private const string IssuedToken = "test-token";
@@ -20,7 +21,7 @@ public class WebApiTestTests : WebApiTest<Program>
     }
 
     [Fact]
-    public async Task AuthenticateAsync_WithValidCredentials_ReturnsToken()
+    public async Task GivenValidCredentials_WhenAuthenticating_ThenATokenComesBack()
     {
         var authentication = await AuthenticateAsync(ValidCredentials, "/auth");
 
@@ -29,13 +30,13 @@ public class WebApiTestTests : WebApiTest<Program>
     }
 
     [Fact]
-    public async Task AuthenticateAsync_WithInvalidCredentials_ThrowsTestException()
+    public async Task GivenInvalidCredentials_WhenAuthenticating_ThenATestExceptionIsThrown()
     {
         await Assert.ThrowsAsync<TestException>(() => AuthenticateAsync(InvalidCredentials, "/auth"));
     }
 
     [Fact]
-    public async Task SecureEndpoint_WithoutAuthorization_ReturnsUnauthorized()
+    public async Task GivenNoAuthorization_WhenCallingASecuredEndpoint_ThenUnauthorizedComesBack()
     {
         var response = await Gateway.GetAsync<string>("/secure");
 
@@ -43,7 +44,7 @@ public class WebApiTestTests : WebApiTest<Program>
     }
 
     [Fact]
-    public async Task Authorize_AddsBearerToken_AllowingAccessToSecureEndpoint()
+    public async Task GivenABearerTokenIsApplied_WhenCallingASecuredEndpoint_ThenAccessIsAllowed()
     {
         Authorize(IssuedToken);
 
@@ -53,7 +54,7 @@ public class WebApiTestTests : WebApiTest<Program>
     }
 
     [Fact]
-    public async Task AuthenticateAndAuthorizeAsync_AllowsAccessToSecureEndpoint()
+    public async Task GivenValidCredentials_WhenAuthenticatingAndAuthorising_ThenAccessToASecuredEndpointIsAllowed()
     {
         await AuthenticateAndAuthorizeAsync(ValidCredentials, "/auth");
 

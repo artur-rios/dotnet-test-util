@@ -92,9 +92,30 @@ public class ProductsApiTests : WebApiTest<Program>
 Full documentation, with per-component guides, lives at
 [artur-rios.github.io/dotnet-test-util](https://artur-rios.github.io/dotnet-test-util/):
 
-- [Assertions & Attributes](https://artur-rios.github.io/dotnet-test-util/assertions-and-attributes/)
-- [Fakes](https://artur-rios.github.io/dotnet-test-util/fakes/)
-- [Web API Testing](https://artur-rios.github.io/dotnet-test-util/web-api-testing/)
+- [Assertions & Attributes](https://artur-rios.github.io/dotnet-test-util/docs/assertions-and-attributes/)
+- [Fakes](https://artur-rios.github.io/dotnet-test-util/docs/fakes/)
+- [Web API Testing](https://artur-rios.github.io/dotnet-test-util/docs/web-api-testing/)
+
+## Testing
+
+The test suite is xUnit, and every test is named with the Given / When / Then pattern. Every test class
+carries a `Category` trait, so the two kinds can be run — and reported — separately:
+
+```bash
+dotnet test src/ArturRios.Util.Test.sln --filter "Category=Unit"
+dotnet test src/ArturRios.Util.Test.sln --filter "Category=Functional"
+```
+
+Unit tests exercise the assertions, attributes and fakes in isolation.
+Functional tests host the `sut/` web app in memory through `WebApiTest<Program>` and drive real HTTP
+requests against it.
+CI runs the two as separate jobs, and both must pass before a pull request can be merged.
+
+`Category` is the same trait the `UnitFact`, `UnitTheory`, `FunctionalFact` and `FunctionalTheory`
+attributes in this package stamp on your own tests — see
+[Assertions and attributes](https://artur-rios.github.io/dotnet-test-util/docs/assertions-and-attributes/).
+Use those in a project that references this package; a project that does not can put
+`[Trait("Category", "Unit")]` on the class, as this repository's own tests do, and both filter the same way.
 
 ## Versioning
 

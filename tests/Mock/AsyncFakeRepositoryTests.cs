@@ -3,12 +3,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ArturRios.Util.Test.Tests.Mock;
 
+[Trait("Category", "Unit")]
 public class AsyncFakeRepositoryTests
 {
     private static AsyncFakeRepository<Person> NewRepository() => new();
 
     [Fact]
-    public async Task CreateAsync_AssignsSequentialIdsStartingAtOne()
+    public async Task GivenAnEmptyFake_WhenCreatingEntitiesAsynchronously_ThenIdsAreAssignedSequentiallyFromOne()
     {
         var repository = NewRepository();
 
@@ -21,7 +22,7 @@ public class AsyncFakeRepositoryTests
     }
 
     [Fact]
-    public async Task GetByIdAsync_ReturnsMatchingEntity()
+    public async Task GivenAStoredEntity_WhenFetchingItByIdAsynchronously_ThenItComesBack()
     {
         var repository = NewRepository();
         var id = (await repository.CreateAsync(new Person { Name = "Ann", Age = 30 })).Data;
@@ -34,7 +35,7 @@ public class AsyncFakeRepositoryTests
     }
 
     [Fact]
-    public async Task GetByIdAsync_WithUnknownId_ReturnsFailedOutput()
+    public async Task GivenAnUnknownId_WhenFetchingByIdAsynchronously_ThenAFailedOutputComesBack()
     {
         var repository = NewRepository();
 
@@ -45,7 +46,7 @@ public class AsyncFakeRepositoryTests
     }
 
     [Fact]
-    public async Task GetAllAsync_ReturnsAllStoredEntities()
+    public async Task GivenStoredEntities_WhenFetchingAllAsynchronously_ThenEveryOneComesBack()
     {
         var repository = NewRepository();
         await repository.CreateAsync(new Person { Name = "Ann" });
@@ -58,7 +59,7 @@ public class AsyncFakeRepositoryTests
     }
 
     [Fact]
-    public async Task Query_ReturnsAllStoredEntities()
+    public async Task GivenStoredEntities_WhenQueryingAsynchronously_ThenEveryOneComesBack()
     {
         var repository = NewRepository();
         await repository.CreateAsync(new Person { Name = "Ann" });
@@ -70,7 +71,7 @@ public class AsyncFakeRepositoryTests
     }
 
     [Fact]
-    public async Task Query_SupportsToListAsync()
+    public async Task GivenTheFakeQuery_WhenMaterialisedWithToListAsync_ThenItIsSupported()
     {
         var repository = NewRepository();
         await repository.CreateAsync(new Person { Name = "Ann", Age = 30 });
@@ -82,7 +83,7 @@ public class AsyncFakeRepositoryTests
     }
 
     [Fact]
-    public async Task Query_SupportsFirstOrDefaultAsync()
+    public async Task GivenTheFakeQuery_WhenMaterialisedWithFirstOrDefaultAsync_ThenItIsSupported()
     {
         var repository = NewRepository();
         await repository.CreateAsync(new Person { Name = "Ann" });
@@ -95,7 +96,7 @@ public class AsyncFakeRepositoryTests
     }
 
     [Fact]
-    public async Task Query_SupportsCountAsync()
+    public async Task GivenTheFakeQuery_WhenMaterialisedWithCountAsync_ThenItIsSupported()
     {
         var repository = NewRepository();
         await repository.CreateAsync(new Person { Name = "Ann", Age = 30 });
@@ -107,7 +108,7 @@ public class AsyncFakeRepositoryTests
     }
 
     [Fact]
-    public async Task UpdateAsync_CopiesWritablePropertiesButKeepsId()
+    public async Task GivenAStoredEntity_WhenUpdatedAsynchronously_ThenWritablePropertiesAreCopiedAndTheIdIsKept()
     {
         var repository = NewRepository();
         var id = (await repository.CreateAsync(new Person { Name = "Ann", Age = 30 })).Data;
@@ -123,7 +124,7 @@ public class AsyncFakeRepositoryTests
     }
 
     [Fact]
-    public async Task UpdateAsync_WithUnknownId_ReturnsFailedOutput()
+    public async Task GivenAnUnknownId_WhenUpdatingAsynchronously_ThenAFailedOutputComesBack()
     {
         var repository = NewRepository();
 
@@ -134,7 +135,7 @@ public class AsyncFakeRepositoryTests
     }
 
     [Fact]
-    public async Task DeleteAsync_RemovesEntityAndReturnsId()
+    public async Task GivenAStoredEntity_WhenDeletedAsynchronously_ThenItIsRemovedAndItsIdComesBack()
     {
         var repository = NewRepository();
         var id = (await repository.CreateAsync(new Person { Name = "Ann" })).Data;
@@ -147,7 +148,7 @@ public class AsyncFakeRepositoryTests
     }
 
     [Fact]
-    public async Task DeleteAsync_WithUnknownId_ReturnsFailedOutput()
+    public async Task GivenAnUnknownId_WhenDeletingAsynchronously_ThenAFailedOutputComesBack()
     {
         var repository = NewRepository();
 
@@ -157,7 +158,7 @@ public class AsyncFakeRepositoryTests
     }
 
     [Fact]
-    public async Task CreateRangeAsync_StoresEntitiesAndReturnsAssignedIds()
+    public async Task GivenSeveralEntities_WhenCreatingARangeAsynchronously_ThenTheyAreStoredAndTheirIdsComeBack()
     {
         var repository = NewRepository();
 
@@ -172,7 +173,7 @@ public class AsyncFakeRepositoryTests
     }
 
     [Fact]
-    public async Task UpdateRangeAsync_UpdatesExistingEntitiesAndReturnsThem()
+    public async Task GivenStoredEntities_WhenUpdatingARangeAsynchronously_ThenTheyAreUpdatedAndComeBack()
     {
         var repository = NewRepository();
         var firstId = (await repository.CreateAsync(new Person { Name = "Ann" })).Data;
@@ -190,7 +191,7 @@ public class AsyncFakeRepositoryTests
     }
 
     [Fact]
-    public async Task UpdateRangeAsync_SkipsUnknownEntities()
+    public async Task GivenARangeContainingUnknownEntities_WhenUpdatingAsynchronously_ThenTheUnknownOnesAreSkipped()
     {
         var repository = NewRepository();
         var id = (await repository.CreateAsync(new Person { Name = "Ann" })).Data;
@@ -207,7 +208,7 @@ public class AsyncFakeRepositoryTests
     }
 
     [Fact]
-    public async Task DeleteRangeAsync_RemovesMatchingEntitiesAndReturnsIds()
+    public async Task GivenStoredEntities_WhenDeletingARangeAsynchronously_ThenTheMatchingOnesAreRemovedAndTheirIdsComeBack()
     {
         var repository = NewRepository();
         var firstId = (await repository.CreateAsync(new Person { Name = "Ann" })).Data;
@@ -224,7 +225,7 @@ public class AsyncFakeRepositoryTests
     }
 
     [Fact]
-    public async Task GetAllAsync_WithCancelledToken_ThrowsOperationCanceled()
+    public async Task GivenACancelledToken_WhenFetchingAllAsynchronously_ThenCancellationIsThrown()
     {
         var repository = NewRepository();
         var cancelled = new CancellationToken(canceled: true);
@@ -233,7 +234,7 @@ public class AsyncFakeRepositoryTests
     }
 
     [Fact]
-    public async Task CreateAsync_WithCancelledToken_ThrowsAndDoesNotStore()
+    public async Task GivenACancelledToken_WhenCreatingAsynchronously_ThenCancellationIsThrownAndNothingIsStored()
     {
         var repository = NewRepository();
         var cancelled = new CancellationToken(canceled: true);

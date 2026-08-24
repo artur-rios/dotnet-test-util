@@ -5,6 +5,7 @@ namespace ArturRios.Util.Test.Tests.Attributes;
 
 // These tests mutate the process-wide ASPNETCORE_ENVIRONMENT variable, so they must not run
 // in parallel with each other or with the web API tests (see AssemblyInfo.cs).
+[Trait("Category", "Unit")]
 public class CustomAttributeTests : IDisposable
 {
     private readonly string? _originalEnvironment =
@@ -16,7 +17,7 @@ public class CustomAttributeTests : IDisposable
     public void Dispose() => SetEnvironment(_originalEnvironment);
 
     [Fact]
-    public void Fact_WithNoRestrictions_IsNotSkipped()
+    public void GivenAFactWithNoRestrictions_WhenInspected_ThenItIsNotSkipped()
     {
         var attribute = new UnitFactAttribute();
 
@@ -24,7 +25,7 @@ public class CustomAttributeTests : IDisposable
     }
 
     [Fact]
-    public void Fact_WithSkipConditionTrue_IsSkipped()
+    public void GivenAFactWithASkipConditionThatMatches_WhenInspected_ThenItIsSkipped()
     {
         var attribute = new UnitFactAttribute(skipCondition: true);
 
@@ -32,7 +33,7 @@ public class CustomAttributeTests : IDisposable
     }
 
     [Fact]
-    public void Fact_WithSkipConditionTrueAndNoEnvironments_IsStillSkipped()
+    public void GivenAFactWithASkipConditionAndNoEnvironments_WhenInspected_ThenItIsStillSkipped()
     {
         // Regression: skipCondition used to be ignored when no environments were supplied.
         var attribute = new FunctionalFactAttribute(environments: null, skipCondition: true);
@@ -41,7 +42,7 @@ public class CustomAttributeTests : IDisposable
     }
 
     [Fact]
-    public void Fact_WhenCurrentEnvironmentIsBlocked_IsSkipped()
+    public void GivenAFactBlockedInTheCurrentEnvironment_WhenInspected_ThenItIsSkipped()
     {
         SetEnvironment("Production");
 
@@ -51,7 +52,7 @@ public class CustomAttributeTests : IDisposable
     }
 
     [Fact]
-    public void Fact_WhenCurrentEnvironmentIsNotBlocked_IsNotSkipped()
+    public void GivenAFactNotBlockedInTheCurrentEnvironment_WhenInspected_ThenItIsNotSkipped()
     {
         SetEnvironment("Local");
 
@@ -61,7 +62,7 @@ public class CustomAttributeTests : IDisposable
     }
 
     [Fact]
-    public void Fact_BlockedMatchIsCaseInsensitive()
+    public void GivenTheEnvironmentNameInADifferentCase_WhenMatchingABlockedFact_ThenItStillMatches()
     {
         SetEnvironment("production");
 
@@ -71,7 +72,7 @@ public class CustomAttributeTests : IDisposable
     }
 
     [Fact]
-    public void Fact_WithEmptyEnvironments_IsNotSkipped()
+    public void GivenAFactWithAnEmptyEnvironmentList_WhenInspected_ThenItIsNotSkipped()
     {
         SetEnvironment("Production");
 
@@ -81,7 +82,7 @@ public class CustomAttributeTests : IDisposable
     }
 
     [Fact]
-    public void Theory_WhenCurrentEnvironmentIsBlocked_IsSkipped()
+    public void GivenATheoryBlockedInTheCurrentEnvironment_WhenInspected_ThenItIsSkipped()
     {
         SetEnvironment("Staging");
 
@@ -91,7 +92,7 @@ public class CustomAttributeTests : IDisposable
     }
 
     [Fact]
-    public void Theory_WithNoRestrictions_IsNotSkipped()
+    public void GivenATheoryWithNoRestrictions_WhenInspected_ThenItIsNotSkipped()
     {
         var attribute = new UnitTheoryAttribute();
 
@@ -99,7 +100,7 @@ public class CustomAttributeTests : IDisposable
     }
 
     [Fact]
-    public void Environments_PropertyIsExposed()
+    public void GivenAnAttributeScopedToEnvironments_WhenInspected_ThenThoseEnvironmentsAreExposed()
     {
         var environments = new[] { EnvironmentType.Local, EnvironmentType.Development };
 

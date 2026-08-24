@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace ArturRios.Util.Test.Tests.Mock;
 
+[Trait("Category", "Unit")]
 public class FakeSchedulerTests
 {
     private static CommandQueryMediator BuildMediator(out RecordingCommandHandler commandHandler,
@@ -24,7 +25,7 @@ public class FakeSchedulerTests
     }
 
     [Fact]
-    public async Task CreateCommandSchedule_DispatchesCommandThroughMediator()
+    public async Task GivenAScheduledCommand_WhenTheScheduleRuns_ThenTheCommandIsDispatchedThroughTheMediator()
     {
         var mediator = BuildMediator(out var commandHandler, out _);
         var scheduler = new FakeScheduler(mediator, waitTimeInSeconds: 0);
@@ -38,7 +39,7 @@ public class FakeSchedulerTests
     }
 
     [Fact]
-    public async Task CreateQuerySchedule_DispatchesQueryThroughMediator()
+    public async Task GivenAScheduledQuery_WhenTheScheduleRuns_ThenTheQueryIsDispatchedThroughTheMediator()
     {
         var mediator = BuildMediator(out _, out var queryHandler);
         var scheduler = new FakeScheduler(mediator, waitTimeInSeconds: 0);
@@ -52,7 +53,7 @@ public class FakeSchedulerTests
     }
 
     [Fact]
-    public async Task CreateCommandSchedule_WaitsForConfiguredDelay()
+    public async Task GivenAConfiguredDelay_WhenTheScheduleRuns_ThenItWaitsForThatDelay()
     {
         var mediator = BuildMediator(out _, out _);
         var scheduler = new FakeScheduler(mediator, waitTimeInSeconds: 1);
