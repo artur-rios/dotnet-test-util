@@ -7,11 +7,29 @@ using ArturRios.Output;
 
 namespace ArturRios.Util.Test.Tests;
 
-/// <summary>Simple entity used to exercise <c>FakeRepository</c>.</summary>
-public class Person : Entity
+/// <summary>Simple <see cref="long"/>-keyed entity used to exercise <c>FakeRepository</c>.</summary>
+public class Person : Entity<long>
 {
     public string Name { get; set; } = string.Empty;
     public int Age { get; set; }
+}
+
+/// <summary><see cref="int"/>-keyed entity used to exercise the fakes' sequential id generation.</summary>
+public class Counter : Entity<int>
+{
+    public string Label { get; set; } = string.Empty;
+}
+
+/// <summary><see cref="Guid"/>-keyed entity used to exercise the fakes' Guid id generation.</summary>
+public class Device : Entity<Guid>
+{
+    public string Model { get; set; } = string.Empty;
+}
+
+/// <summary><see cref="string"/>-keyed entity used to exercise caller-assigned ids.</summary>
+public class Country : Entity<string>
+{
+    public string Name { get; set; } = string.Empty;
 }
 
 /// <summary>Command dispatched by the scheduler tests.</summary>

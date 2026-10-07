@@ -30,8 +30,8 @@ The package targets **net10.0** and builds on other `ArturRios.*` packages
 |---|---|
 | `CustomAssert` | Extra xUnit assertions for null/empty checks on collections and strings |
 | `UnitFactAttribute`, `UnitTheoryAttribute`, `FunctionalFactAttribute`, `FunctionalTheoryAttribute` | Test attributes that can skip tests per environment or on a condition |
-| `FakeRepository<T>` | In-memory `IRepository<T>` implementation |
-| `AsyncFakeRepository<T>` | In-memory `IAsyncRepository<T>` implementation with cancellation support and async-capable `Query()` |
+| `FakeRepository<T, TKey>` | In-memory `IRepository<T, TKey>` implementation, for any entity key type |
+| `AsyncFakeRepository<T, TKey>` | In-memory `IAsyncRepository<T, TKey>` implementation with cancellation support and async-capable `Query()` |
 | `FakeScheduler` | Simulates a delayed command/query dispatch through a `CommandQueryMediator` |
 | `WebApiTest<T>` | Base class for functional web API tests using an in-memory host |
 | `TestException` | Exception raised by the utilities when a test-support operation fails |
@@ -39,7 +39,7 @@ The package targets **net10.0** and builds on other `ArturRios.*` packages
 ## Guides
 
 - [Assertions & Attributes](assertions-and-attributes/) — `CustomAssert` and the environment-aware test attributes.
-- [Fakes](fakes/) — `FakeRepository<T>`, `AsyncFakeRepository<T>` and `FakeScheduler`.
+- [Fakes](fakes/) — `FakeRepository<T, TKey>`, `AsyncFakeRepository<T, TKey>` and `FakeScheduler`.
 - [Web API Testing](web-api-testing/) — the `WebApiTest<T>` base class.
 
 ## Quick Start
@@ -64,9 +64,9 @@ public void Calculates_totals() { /* ... */ }
 ### In-memory repository
 
 ```csharp
-var repository = new FakeRepository<Person>();
+var repository = new FakeRepository<Person, long>();   // Person : Entity<long>
 
-var id = repository.Create(new Person { Name = "Ann" }).Data;   // ids start at 1
+var id = repository.Create(new Person { Name = "Ann" }).Data;   // long and int ids start at 1
 var person = repository.GetById(id).Data;
 ```
 
@@ -88,6 +88,13 @@ public class ProductsApiTests : WebApiTest<Program>
     }
 }
 ```
+
+## Upgrading to 4.0
+
+4.0 moves to `ArturRios.Data.Relational.Core` 5.0, where entities declare their key type, so the fakes take it
+as a second type argument: `FakeRepository<Person>` becomes `FakeRepository<Person, long>` and
+`AsyncFakeRepository<Person>` becomes `AsyncFakeRepository<Person, long>`. Behavior for `long` keys is unchanged.
+See [Fakes](fakes/#upgrading-to-40) for the full list.
 
 ## Versioning
 

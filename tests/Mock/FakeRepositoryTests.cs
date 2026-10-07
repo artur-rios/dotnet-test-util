@@ -5,7 +5,7 @@ namespace ArturRios.Util.Test.Tests.Mock;
 [Trait("Category", "Unit")]
 public class FakeRepositoryTests
 {
-    private static FakeRepository<Person> NewRepository() => new();
+    private static FakeRepository<Person, long> NewRepository() => new();
 
     [Fact]
     public void GivenAnEmptyFake_WhenCreatingEntities_ThenIdsAreAssignedSequentiallyFromOne()
