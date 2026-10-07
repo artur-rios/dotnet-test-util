@@ -5,34 +5,55 @@ using ArturRios.Output;
 namespace ArturRios.Util.Test.Mock;
 
 /// <summary>
-/// In-memory implementation of <see cref="IAsyncRepository{T}"/> for use in tests.
-/// Entities are stored in a backing list and identifiers are assigned sequentially starting at <c>1</c>.
-/// Lookups that find no matching entity return a failed <see cref="DataOutput{T}"/> carrying an error rather than throwing.
-/// Operations complete synchronously; each returns a already-completed <see cref="Task"/> and honors the supplied
+/// In-memory implementation of <see cref="IAsyncRepository{T, TKey}"/> for use in tests.
+/// Entities are stored in a backing list. Lookups that find no matching entity return a failed
+/// <see cref="DataOutput{T}"/> carrying an error rather than throwing.
+/// Operations complete synchronously; each returns an already-completed <see cref="Task"/> and honors the supplied
 /// <see cref="CancellationToken"/>.
 /// </summary>
+/// <remarks>
+/// <para>How <see cref="CreateAsync"/> and <see cref="CreateRangeAsync"/> assign identifiers depends on the key type:</para>
+/// <list type="bullet">
+/// <item><description><see cref="long"/> and <see cref="int"/>: sequentially, starting at <c>1</c>.</description></item>
+/// <item><description><see cref="Guid"/>: <see cref="Guid.NewGuid"/>.</description></item>
+/// <item><description>
+/// Any other key type (e.g. <see cref="string"/>): the caller assigns the identifier before creating the entity;
+/// creating one whose identifier is unset, or already stored, returns a failed output.
+/// </description></item>
+/// </list>
+/// <para>
+/// When a generator applies, it overwrites any identifier the caller set. Pass an id generator to the constructor
+/// to replace the default for any key type.
+/// </para>
+/// </remarks>
 /// <typeparam name="T">The entity type handled by the repository.</typeparam>
-public class AsyncFakeRepository<T> : IAsyncRepository<T> where T : Entity
+/// <typeparam name="TKey">The entity's primary key type.</typeparam>
+public class AsyncFakeRepository<T, TKey> : IAsyncRepository<T, TKey> where T : Entity<TKey> where TKey : IEquatable<TKey>
 {
-    private readonly List<T> _items = [];
-    private long _nextId = 1;
+    private readonly FakeEntityStore<T, TKey> _store;
+
+    /// <summary>Creates an empty repository that assigns identifiers with the default for <typeparamref name="TKey"/>.</summary>
+    public AsyncFakeRepository() : this(null) { }
+
+    /// <summary>Creates an empty repository that assigns identifiers with <paramref name="idGenerator"/>.</summary>
+    /// <param name="idGenerator">
+    /// Called once per created entity to produce its identifier, or <c>null</c> to use the default for
+    /// <typeparamref name="TKey"/>.
+    /// </param>
+    public AsyncFakeRepository(Func<TKey>? idGenerator) => _store = new FakeEntityStore<T, TKey>(idGenerator);
 
     /// <summary>Exposes the stored entities as a queryable sequence.</summary>
     /// <returns>
     /// A queryable over every stored entity backed by an async query provider, so EF Core's async operators
     /// (<c>ToListAsync</c>, <c>FirstOrDefaultAsync</c>, <c>CountAsync</c>, …) can be composed on top of it.
     /// </returns>
-    public IQueryable<T> Query() => new TestAsyncEnumerable<T>(_items);
+    public IQueryable<T> Query() => new TestAsyncEnumerable<T>(_store.Items);
 
     /// <summary>Returns all stored entities.</summary>
     /// <param name="ct">A token to observe for cancellation.</param>
     /// <returns>A successful output whose data contains every stored entity.</returns>
-    public Task<DataOutput<IEnumerable<T>>> GetAllAsync(CancellationToken ct = new())
-    {
-        ct.ThrowIfCancellationRequested();
-
-        return Task.FromResult(DataOutput<IEnumerable<T>>.New.WithData(_items));
-    }
+    public Task<DataOutput<IEnumerable<T>>> GetAllAsync(CancellationToken ct = default) =>
+        Run(_store.GetAll, ct);
 
     /// <summary>Returns the entity with the given identifier.</summary>
     /// <param name="id">The identifier to look up.</param>
@@ -40,54 +61,28 @@ public class AsyncFakeRepository<T> : IAsyncRepository<T> where T : Entity
     /// <returns>
     /// A successful output carrying the matching entity, or a failed output when no stored entity has that identifier.
     /// </returns>
-    public Task<DataOutput<T?>> GetByIdAsync(long id, CancellationToken ct = new())
-    {
-        ct.ThrowIfCancellationRequested();
+    public Task<DataOutput<T?>> GetByIdAsync(TKey id, CancellationToken ct = default) =>
+        Run(() => _store.GetById(id), ct);
 
-        var item = _items.FirstOrDefault(x => x.Id == id);
-
-        var output = item is null
-            ? DataOutput<T?>.New.WithError($"Entity with Id {id} not found")
-            : DataOutput<T?>.New.WithData(item);
-
-        return Task.FromResult(output);
-    }
-
-    /// <summary>Adds <paramref name="entity"/> to the store, assigning it a fresh identifier.</summary>
+    /// <summary>Adds <paramref name="entity"/> to the store, assigning its identifier as described on the class.</summary>
     /// <param name="entity">The entity to store.</param>
     /// <param name="ct">A token to observe for cancellation.</param>
-    /// <returns>A successful output carrying the identifier assigned to the entity.</returns>
-    public Task<DataOutput<long>> CreateAsync(T entity, CancellationToken ct = new())
-    {
-        ct.ThrowIfCancellationRequested();
+    /// <returns>
+    /// A successful output carrying the entity's identifier, or a failed output when the identifier is unset (for
+    /// key types without a generator) or already stored.
+    /// </returns>
+    public Task<DataOutput<TKey>> CreateAsync(T entity, CancellationToken ct = default) =>
+        Run(() => _store.Create(entity), ct);
 
-        entity.Id = _nextId++;
-
-        _items.Add(entity);
-
-        return Task.FromResult(DataOutput<long>.New.WithData(entity.Id));
-    }
-
-    /// <summary>Adds every entity in <paramref name="entities"/> to the store, assigning each a fresh identifier.</summary>
+    /// <summary>Adds every entity in <paramref name="entities"/> to the store, assigning identifiers as described on the class.</summary>
     /// <param name="entities">The entities to store.</param>
     /// <param name="ct">A token to observe for cancellation.</param>
-    /// <returns>A successful output carrying the identifiers assigned, in insertion order.</returns>
-    public Task<DataOutput<IEnumerable<long>>> CreateRangeAsync(IEnumerable<T> entities, CancellationToken ct = new())
-    {
-        ct.ThrowIfCancellationRequested();
-
-        var ids = new List<long>();
-
-        foreach (var entity in entities)
-        {
-            entity.Id = _nextId++;
-
-            _items.Add(entity);
-            ids.Add(entity.Id);
-        }
-
-        return Task.FromResult(DataOutput<IEnumerable<long>>.New.WithData(ids));
-    }
+    /// <returns>
+    /// A successful output carrying the identifiers, in insertion order, or a failed output when any identifier is unset
+    /// or duplicated — in which case nothing is stored.
+    /// </returns>
+    public Task<DataOutput<IEnumerable<TKey>>> CreateRangeAsync(IEnumerable<T> entities, CancellationToken ct = default) =>
+        Run(() => _store.CreateRange(entities), ct);
 
     /// <summary>Copies the writable properties of <paramref name="entity"/> onto the stored entity with the same identifier.</summary>
     /// <param name="entity">The entity carrying the new values.</param>
@@ -95,48 +90,15 @@ public class AsyncFakeRepository<T> : IAsyncRepository<T> where T : Entity
     /// <returns>
     /// A successful output carrying the updated stored entity, or a failed output when no stored entity has a matching identifier.
     /// </returns>
-    public Task<DataOutput<T>> UpdateAsync(T entity, CancellationToken ct = new())
-    {
-        ct.ThrowIfCancellationRequested();
-
-        var existingItem = _items.FirstOrDefault(item => item.Id == entity.Id);
-
-        if (existingItem is null)
-        {
-            return Task.FromResult(DataOutput<T>.New.WithError($"Entity with Id {entity.Id} not found"));
-        }
-
-        CopyWritableProperties(entity, existingItem);
-
-        return Task.FromResult(DataOutput<T>.New.WithData(existingItem));
-    }
+    public Task<DataOutput<T>> UpdateAsync(T entity, CancellationToken ct = default) =>
+        Run(() => _store.Update(entity), ct);
 
     /// <summary>Updates every entity that exists in the store, silently skipping identifiers that are not found.</summary>
     /// <param name="entities">The entities carrying the new values.</param>
     /// <param name="ct">A token to observe for cancellation.</param>
     /// <returns>A successful output carrying the stored entities that were updated.</returns>
-    public Task<DataOutput<IEnumerable<T>>> UpdateRangeAsync(IEnumerable<T> entities, CancellationToken ct = new())
-    {
-        ct.ThrowIfCancellationRequested();
-
-        var updated = new List<T>();
-
-        foreach (var entity in entities)
-        {
-            var existingItem = _items.FirstOrDefault(item => item.Id == entity.Id);
-
-            if (existingItem is null)
-            {
-                // Entities that do not exist are silently skipped.
-                continue;
-            }
-
-            CopyWritableProperties(entity, existingItem);
-            updated.Add(existingItem);
-        }
-
-        return Task.FromResult(DataOutput<IEnumerable<T>>.New.WithData(updated));
-    }
+    public Task<DataOutput<IEnumerable<T>>> UpdateRangeAsync(IEnumerable<T> entities, CancellationToken ct = default) =>
+        Run(() => _store.UpdateRange(entities), ct);
 
     /// <summary>Removes the stored entity with the same identifier as <paramref name="entity"/>.</summary>
     /// <param name="entity">The entity to remove.</param>
@@ -144,51 +106,20 @@ public class AsyncFakeRepository<T> : IAsyncRepository<T> where T : Entity
     /// <returns>
     /// A successful output carrying the identifier of the removed entity, or a failed output when no stored entity has a matching identifier.
     /// </returns>
-    public Task<DataOutput<long>> DeleteAsync(T entity, CancellationToken ct = new())
-    {
-        ct.ThrowIfCancellationRequested();
-
-        var existingItem = _items.FirstOrDefault(item => item.Id == entity.Id);
-
-        if (existingItem is null)
-        {
-            return Task.FromResult(DataOutput<long>.New.WithError($"Entity with Id {entity.Id} not found"));
-        }
-
-        _items.Remove(existingItem);
-
-        return Task.FromResult(DataOutput<long>.New.WithData(existingItem.Id));
-    }
+    public Task<DataOutput<TKey>> DeleteAsync(T entity, CancellationToken ct = default) =>
+        Run(() => _store.Delete(entity), ct);
 
     /// <summary>Removes every stored entity whose identifier is in <paramref name="ids"/>.</summary>
     /// <param name="ids">The identifiers to remove.</param>
     /// <param name="ct">A token to observe for cancellation.</param>
     /// <returns>A successful output carrying the identifiers that were actually removed.</returns>
-    public Task<DataOutput<IEnumerable<long>>> DeleteRangeAsync(IEnumerable<long> ids, CancellationToken ct = new())
+    public Task<DataOutput<IEnumerable<TKey>>> DeleteRangeAsync(IEnumerable<TKey> ids, CancellationToken ct = default) =>
+        Run(() => _store.DeleteRange(ids), ct);
+
+    private static Task<TResult> Run<TResult>(Func<TResult> operation, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
 
-        var idSet = ids.ToHashSet();
-        var entities = _items.Where(e => idSet.Contains(e.Id)).ToList();
-
-        foreach (var entity in entities)
-        {
-            _items.Remove(entity);
-        }
-
-        return Task.FromResult(DataOutput<IEnumerable<long>>.New.WithData([.. entities.Select(e => e.Id)]));
-    }
-
-    private static void CopyWritableProperties(T source, T target)
-    {
-        foreach (var prop in typeof(T).GetProperties())
-        {
-            if (!prop.CanWrite || prop.Name == nameof(Entity.Id))
-            {
-                continue;
-            }
-
-            prop.SetValue(target, prop.GetValue(source));
-        }
+        return Task.FromResult(operation());
     }
 }
