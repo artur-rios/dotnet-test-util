@@ -28,8 +28,8 @@ The package targets **net10.0** and builds on other `ArturRios.*` packages
 |---|---|
 | `CustomAssert` | Extra xUnit assertions for null/empty checks on collections and strings |
 | `UnitFactAttribute`, `UnitTheoryAttribute`, `FunctionalFactAttribute`, `FunctionalTheoryAttribute` | Test attributes that can skip tests per environment or on a condition |
-| `FakeRepository<T>` | In-memory `IRepository<T>` implementation |
-| `AsyncFakeRepository<T>` | In-memory `IAsyncRepository<T>` implementation with cancellation support and async-capable `Query()` |
+| `FakeRepository<T, TKey>` | In-memory `IRepository<T, TKey>` implementation, for any entity key type |
+| `AsyncFakeRepository<T, TKey>` | In-memory `IAsyncRepository<T, TKey>` implementation with cancellation support and async-capable `Query()` |
 | `FakeScheduler` | Simulates a delayed command/query dispatch through a `CommandQueryMediator` |
 | `WebApiTest<T>` | Base class for functional web API tests using an in-memory host |
 | `TestException` | Exception raised by the utilities when a test-support operation fails |
@@ -60,9 +60,9 @@ public void Charges_card() { /* ... */ }
 ### In-memory repository
 
 ```csharp
-var repository = new FakeRepository<Person>();
+var repository = new FakeRepository<Person, long>();   // Person : Entity<long>
 
-var id = repository.Create(new Person { Name = "Ann" }).Data;   // ids start at 1
+var id = repository.Create(new Person { Name = "Ann" }).Data;   // long and int ids start at 1
 var person = repository.GetById(id).Data;
 repository.Update(new Person { Id = id, Name = "Ann Smith" });
 repository.Delete(new Person { Id = id });
@@ -86,6 +86,27 @@ public class ProductsApiTests : WebApiTest<Program>
     }
 }
 ```
+
+## Upgrading to 4.0
+
+4.0 moves to `ArturRios.Data.Relational.Core` 5.0, where entities declare their key type (`Entity<TKey>`) and
+the repository contracts take it as a second argument. The fakes follow: they implement
+`IRepository<T, TKey>` / `IAsyncRepository<T, TKey>`, and the single-argument `FakeRepository<T>` and
+`AsyncFakeRepository<T>` are removed. To keep the previous `long` keys, add `long` everywhere the old types appear:
+
+| 3.x | 4.x |
+|---|---|
+| `class Person : Entity` | `class Person : Entity<long>` |
+| `new FakeRepository<Person>()` | `new FakeRepository<Person, long>()` |
+| `new AsyncFakeRepository<Person>()` | `new AsyncFakeRepository<Person, long>()` |
+| `where T : Entity` (generic helpers over the fakes) | `where T : Entity<long>` |
+
+Behavior for `long` keys is unchanged: ids are assigned sequentially from `1`, overwriting any id the caller set.
+`int` keys behave the same way, `Guid` keys get `Guid.NewGuid()`, and any other key type (such as `string`) keeps the
+caller-assigned id. Pass a `Func<TKey>` to the constructor to generate ids yourself — see
+[Fakes](https://artur-rios.github.io/dotnet-test-util/docs/fakes/#how-ids-are-assigned).
+
+4.0 also moves to `ArturRios.Util.WebApi` 5.1; `WebApiTest<T>` needed no change.
 
 ## Documentation
 

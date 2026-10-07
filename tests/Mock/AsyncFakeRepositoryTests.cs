@@ -6,7 +6,7 @@ namespace ArturRios.Util.Test.Tests.Mock;
 [Trait("Category", "Unit")]
 public class AsyncFakeRepositoryTests
 {
-    private static AsyncFakeRepository<Person> NewRepository() => new();
+    private static AsyncFakeRepository<Person, long> NewRepository() => new();
 
     [Fact]
     public async Task GivenAnEmptyFake_WhenCreatingEntitiesAsynchronously_ThenIdsAreAssignedSequentiallyFromOne()
