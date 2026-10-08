@@ -13,19 +13,21 @@ This page covers the in-memory test doubles: `FakeRepository<T, TKey>`, `AsyncFa
 `ArturRios.Data.Relational.Core`). It stores entities in a backing list so you can exercise services that depend
 on a repository without touching a database. `T` must derive from
 `ArturRios.Data.Relational.Core.Entities.Entity<TKey>`, and `TKey` is the entity's key type (`long`, `int`,
-`Guid`, `string`, …). Every method returns a `DataOutput<...>`; lookups that find no matching entity return a
-failed output carrying an error rather than throwing.
+`Guid`, `string`, …). Every method except `Query()` returns a `DataOutput<...>`, with the outcomes
+`EfRepository<T, TKey>` produces, so a test that passes against the fake passes for the reason it would in
+production: a lookup that finds nothing succeeds with no data, and an update or delete that would affect no row
+fails with `RelationalErrors.ConcurrencyMessage` and changes nothing.
 
 | Method | Behavior |
 |---|---|
 | `Create(T)` | Assigns the entity's id (see [How ids are assigned](#how-ids-are-assigned)), stores it, returns the id |
-| `GetById(TKey)` | Returns a successful output with the matching entity, or a failed output when the id is unknown |
-| `GetAll()` | Returns every stored entity |
+| `GetById(TKey)` | Returns a successful output with the matching entity, or a successful output with `null` data when the id is unknown |
+| `GetAll()` | Returns a snapshot of every stored entity (later writes don't change it) |
 | `Query()` | Exposes the stored entities as `IQueryable<T>` |
-| `Update(T)` | Copies writable properties (except `Id`) onto the stored entity; returns a failed output when the id is unknown |
-| `Delete(T)` | Removes the entity with the matching id; returns a failed output when unknown |
+| `Update(T)` | Copies writable properties (except `Id`) onto the stored entity; fails with `RelationalErrors.ConcurrencyMessage` when the id is unknown or the concurrency stamp is stale (see [Versioned entities](#versioned-entities)) |
+| `Delete(T)` | Removes the entity with the matching id; fails with `RelationalErrors.ConcurrencyMessage` when the id is unknown or the concurrency stamp is stale |
 | `CreateRange(IEnumerable<T>)` | Stores every entity, assigning each its id; returns the ids. If any id is missing or duplicated, stores nothing and returns a failed output |
-| `UpdateRange(IEnumerable<T>)` | Updates every entity that exists, silently skipping unknown ids; returns the updated entities |
+| `UpdateRange(IEnumerable<T>)` | Updates every entity, all or none: if any id is unknown or any stamp stale, updates nothing and fails with `RelationalErrors.ConcurrencyMessage`; returns the updated entities |
 | `DeleteRange(IEnumerable<TKey>)` | Removes every entity whose id is listed; returns the ids that were actually removed |
 
 ```csharp
@@ -50,6 +52,24 @@ repository.DeleteRange([annId, bobId]);
 
 `Update` uses reflection to copy every writable property from the incoming entity onto the stored one, so it
 mirrors the behavior of a real ORM update where the identifier is preserved.
+
+### Versioned entities
+
+For an entity implementing `IVersionedEntity` (such as one deriving from `VersionedEntity<TKey>`), `Update`,
+`UpdateRange` and `Delete` check the incoming `ConcurrencyStamp` against the stored one, as the real repository's
+`UPDATE`/`DELETE` does. A stale stamp — including the fresh one a newly constructed entity gets — fails with
+`RelationalErrors.ConcurrencyMessage` and changes nothing. A successful update issues a new stamp, on the stored
+entity and on the one passed in, as `BaseDbContext` does on save. So an entity rebuilt from a request must carry
+the stamp it was read with, in tests as in production:
+
+```csharp
+var accounts = new FakeRepository<Account, long>();   // Account : VersionedEntity<long>
+var id = accounts.Create(new Account { Owner = "Ann" }).Data;
+var stamp = accounts.GetById(id).Data!.ConcurrencyStamp;
+
+accounts.Update(new Account { Id = id, Owner = "Bob" });                           // fails: stale stamp
+accounts.Update(new Account { Id = id, Owner = "Bob", ConcurrencyStamp = stamp }); // succeeds, new stamp
+```
 
 ### How ids are assigned
 
@@ -83,7 +103,8 @@ var generated = new FakeRepository<Country, string>(() => $"C{++next}");
 generated.Create(new Country { Name = "Brazil" });             // Data == "C1"
 ```
 
-A generator that returns an id already in the store makes the create fail, as a unique-key violation would.
+A generator that returns an id already in the store makes the create fail with
+`RelationalErrors.UniqueViolationMessage`, as a unique-key violation would.
 
 ## AsyncFakeRepository&lt;T, TKey&gt;
 
@@ -102,13 +123,13 @@ Every method returns a `Task<DataOutput<...>>` that completes synchronously, and
 | Method | Behavior |
 |---|---|
 | `CreateAsync(T, CancellationToken)` | Assigns the entity's id (see [How ids are assigned](#how-ids-are-assigned)), stores it, returns the id |
-| `GetByIdAsync(TKey, CancellationToken)` | Returns a successful output with the matching entity, or a failed output when the id is unknown |
-| `GetAllAsync(CancellationToken)` | Returns every stored entity |
+| `GetByIdAsync(TKey, CancellationToken)` | Returns a successful output with the matching entity, or a successful output with `null` data when the id is unknown |
+| `GetAllAsync(CancellationToken)` | Returns a snapshot of every stored entity (later writes don't change it) |
 | `Query()` | Exposes the stored entities as an async-capable `IQueryable<T>` (supports `ToListAsync`, `FirstOrDefaultAsync`, …) |
-| `UpdateAsync(T, CancellationToken)` | Copies writable properties (except `Id`) onto the stored entity; returns a failed output when the id is unknown |
-| `DeleteAsync(T, CancellationToken)` | Removes the entity with the matching id; returns a failed output when unknown |
+| `UpdateAsync(T, CancellationToken)` | Copies writable properties (except `Id`) onto the stored entity; fails with `RelationalErrors.ConcurrencyMessage` when the id is unknown or the concurrency stamp is stale |
+| `DeleteAsync(T, CancellationToken)` | Removes the entity with the matching id; fails with `RelationalErrors.ConcurrencyMessage` when the id is unknown or the concurrency stamp is stale |
 | `CreateRangeAsync(IEnumerable<T>, CancellationToken)` | Stores every entity, assigning each its id; returns the ids. If any id is missing or duplicated, stores nothing and returns a failed output |
-| `UpdateRangeAsync(IEnumerable<T>, CancellationToken)` | Updates every entity that exists, silently skipping unknown ids; returns the updated entities |
+| `UpdateRangeAsync(IEnumerable<T>, CancellationToken)` | Updates every entity, all or none: if any id is unknown or any stamp stale, updates nothing and fails with `RelationalErrors.ConcurrencyMessage`; returns the updated entities |
 | `DeleteRangeAsync(IEnumerable<TKey>, CancellationToken)` | Removes every entity whose id is listed; returns the ids that were actually removed |
 
 ```csharp
@@ -159,20 +180,5 @@ await scheduler.CreateCommandSchedule<PingCommand, PingCommandOutput>(new PingCo
 
 ## Upgrading to 4.0
 
-4.0 moves to `ArturRios.Data.Relational.Core` 5.0, which replaced the `long`-keyed `Entity` with `Entity<TKey>`
-and gave every repository contract a key type argument. The fakes now implement `IRepository<T, TKey>` and
-`IAsyncRepository<T, TKey>`; `FakeRepository<T>` and `AsyncFakeRepository<T>` are removed. To keep the previous
-`long` keys, add `long` everywhere the old types appear:
-
-| 3.x | 4.x |
-|---|---|
-| `class Person : Entity` | `class Person : Entity<long>` |
-| `class Person : VersionedEntity` | `class Person : VersionedEntity<long>` |
-| `FakeRepository<Person>` | `FakeRepository<Person, long>` |
-| `AsyncFakeRepository<Person>` | `AsyncFakeRepository<Person, long>` |
-| `static AsyncFakeRepository<T> Seed<T>(...) where T : Entity` | `static AsyncFakeRepository<T, long> Seed<T>(...) where T : Entity<long>` |
-
-Nothing else changes for `long` keys: ids still start at `1`, still overwrite any id set before `Create`, and
-lookups, updates and deletes behave as before. A fake now passes wherever the code under test takes
-`IRepository<T, TKey>` or `IAsyncRepository<T, TKey>` (or their read-only bases), exactly as
-`EfRepository<T, TKey>` does.
+The changes the 4.0 fakes need in your tests are listed in
+[Upgrading from 3.x to 4.0](../changelog/#upgrading-from-3x-to-40) in the changelog.

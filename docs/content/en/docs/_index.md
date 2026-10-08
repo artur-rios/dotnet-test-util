@@ -3,7 +3,7 @@ title: Documentation
 linkTitle: Documentation
 weight: 20
 description: >-
-  `ArturRios.Util.Test` is a small .NET library of test-support utilities for xUnit projects. It bundles the helpers that come up again and again when testing...
+  ArturRios.Util.Test is a small .NET library of test-support utilities for xUnit projects. It bundles the helpers that come up again and again when testing...
 ---
 
 `ArturRios.Util.Test` is a small .NET library of test-support utilities for xUnit projects. It bundles the
@@ -21,8 +21,8 @@ The package targets **net10.0** and builds on other `ArturRios.*` packages
 [`ArturRios.Data.Relational.Core`](https://www.nuget.org/packages/ArturRios.Data.Relational.Core),
 [`ArturRios.Mediator`](https://www.nuget.org/packages/ArturRios.Mediator),
 [`ArturRios.Configuration`](https://www.nuget.org/packages/ArturRios.Configuration) and
-[`ArturRios.Util.WebApi`](https://www.nuget.org/packages/ArturRios.Util.WebApi)) plus `xunit` and
-`Microsoft.AspNetCore.Mvc.Testing`.
+[`ArturRios.Util.WebApi`](https://www.nuget.org/packages/ArturRios.Util.WebApi)) plus `xunit`,
+`Microsoft.AspNetCore.Mvc.Testing` and `Microsoft.EntityFrameworkCore`.
 
 ## What's inside
 
@@ -89,25 +89,9 @@ public class ProductsApiTests : WebApiTest<Program>
 }
 ```
 
-## Upgrading to 4.0
+## Upgrading
 
-4.0 moves to `ArturRios.Data.Relational.Core` 5.0, where entities declare their key type, so the fakes take it
-as a second type argument: `FakeRepository<Person>` becomes `FakeRepository<Person, long>` and
-`AsyncFakeRepository<Person>` becomes `AsyncFakeRepository<Person, long>`. Behavior for `long` keys is unchanged.
-See [Fakes](fakes/#upgrading-to-40) for the full list.
-
-## Versioning
-
-Semantic Versioning (SemVer). Breaking changes result in a new major version. New methods or non-breaking behavior
-changes increment the minor version; fixes or tweaks increment the patch.
-
-## Build, test and publish
-
-Use the official [.NET CLI](https://learn.microsoft.com/en-us/dotnet/core/tools/) to build, test and publish the project and Git for source control.
-If you want, optional helper toolsets I built to facilitate these tasks are available:
-
-- [Dotnet Tools](https://github.com/artur-rios/dotnet-tools)
-- [Python Dotnet Tools](https://github.com/artur-rios/python-dotnet-tools)
+- From 3.x to 4.0: [Upgrading from 3.x to 4.0](changelog/#upgrading-from-3x-to-40)
 
 ## Legal Details
 
