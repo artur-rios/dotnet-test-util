@@ -50,7 +50,7 @@ host, and creates the gateway against it.
 |---|---|
 | `Gateway` | The `HttpGateway` bound to the in-memory host; use it for all requests |
 | `AuthenticateAsync(Credentials, authRoute)` | Posts credentials, returns the `Authentication` payload, throws `TestException` on failure |
-| `Authorize(authToken)` | Adds a `Bearer` token to the gateway's default request headers |
+| `Authorize(authToken)` | Sets the `Bearer` token on the gateway's default request headers, replacing any previous one |
 | `AuthenticateAndAuthorizeAsync(Credentials, authRoute)` | Authenticates and applies the returned token in one call |
 
 `Credentials` and `Authentication` come from `ArturRios.Util.WebApi.Security.Records`. The gateway helpers
@@ -59,15 +59,15 @@ host, and creates the gateway against it.
 
 ## Authentication contract
 
-`AuthenticateAsync` expects the authentication route to return a `DataOutput<Authentication>` with HTTP `200`
-and:
+`AuthenticateAsync` expects the authentication route to return a `DataOutput<Authentication>` with a 2xx status
+code and:
 
 - a successful output (no errors),
 - a non-null `Data`, and
 - a non-empty `Data.Token`.
 
-When any of these is missing it throws `TestException("Could not authenticate")`. On success, the token is
-returned (and applied to the gateway headers when you use `AuthenticateAndAuthorizeAsync`).
+When any of these is missing it throws `TestException("Could not authenticate")`. On success, the
+`Authentication` payload is returned (and its `Token` applied to the gateway headers when you use `AuthenticateAndAuthorizeAsync`).
 
 ## Resource cleanup
 
