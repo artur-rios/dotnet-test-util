@@ -15,7 +15,7 @@ public class AsyncFakeRepositoryKeyTypeTests
 
         Assert.True(result.Success);
         Assert.Equal(1L, result.Data);
-        Assert.False((await repository.GetByIdAsync(42)).Success);
+        Assert.Null((await repository.GetByIdAsync(42)).Data);
     }
 
     [Fact]

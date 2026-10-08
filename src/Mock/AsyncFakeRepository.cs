@@ -1,13 +1,17 @@
 using ArturRios.Data.Relational.Core.Entities;
 using ArturRios.Data.Relational.Core.Interfaces;
+using ArturRios.Data.Relational.Core.Repositories;
 using ArturRios.Output;
 
 namespace ArturRios.Util.Test.Mock;
 
 /// <summary>
 /// In-memory implementation of <see cref="IAsyncRepository{T, TKey}"/> for use in tests.
-/// Entities are stored in a backing list. Lookups that find no matching entity return a failed
-/// <see cref="DataOutput{T}"/> carrying an error rather than throwing.
+/// Entities are stored in a backing list. Outcomes match <c>EfRepository&lt;T, TKey&gt;</c>, so code tested against the
+/// fake meets the same results in production: a lookup that finds nothing succeeds with no data; an update or delete
+/// that would affect no row — an unknown id, or an <see cref="IVersionedEntity"/> whose
+/// <see cref="IVersionedEntity.ConcurrencyStamp"/> is stale — fails with <see cref="RelationalErrors.ConcurrencyMessage"/>
+/// and changes nothing; and an update issues a new stamp, as the real context does.
 /// Operations complete synchronously; each returns an already-completed <see cref="Task"/> and honors the supplied
 /// <see cref="CancellationToken"/>.
 /// </summary>
@@ -51,7 +55,7 @@ public class AsyncFakeRepository<T, TKey> : IAsyncRepository<T, TKey> where T : 
 
     /// <summary>Returns all stored entities.</summary>
     /// <param name="ct">A token to observe for cancellation.</param>
-    /// <returns>A successful output whose data contains every stored entity.</returns>
+    /// <returns>A successful output whose data is a snapshot of every stored entity, unaffected by later writes.</returns>
     public Task<DataOutput<IEnumerable<T>>> GetAllAsync(CancellationToken ct = default) =>
         Run(_store.GetAll, ct);
 
@@ -59,7 +63,8 @@ public class AsyncFakeRepository<T, TKey> : IAsyncRepository<T, TKey> where T : 
     /// <param name="id">The identifier to look up.</param>
     /// <param name="ct">A token to observe for cancellation.</param>
     /// <returns>
-    /// A successful output carrying the matching entity, or a failed output when no stored entity has that identifier.
+    /// A successful output carrying the matching entity, or a successful output with no data when no stored entity
+    /// has that identifier.
     /// </returns>
     public Task<DataOutput<T?>> GetByIdAsync(TKey id, CancellationToken ct = default) =>
         Run(() => _store.GetById(id), ct);
@@ -69,7 +74,7 @@ public class AsyncFakeRepository<T, TKey> : IAsyncRepository<T, TKey> where T : 
     /// <param name="ct">A token to observe for cancellation.</param>
     /// <returns>
     /// A successful output carrying the entity's identifier, or a failed output when the identifier is unset (for
-    /// key types without a generator) or already stored.
+    /// key types without a generator) or already stored (<see cref="RelationalErrors.UniqueViolationMessage"/>).
     /// </returns>
     public Task<DataOutput<TKey>> CreateAsync(T entity, CancellationToken ct = default) =>
         Run(() => _store.Create(entity), ct);
@@ -88,15 +93,21 @@ public class AsyncFakeRepository<T, TKey> : IAsyncRepository<T, TKey> where T : 
     /// <param name="entity">The entity carrying the new values.</param>
     /// <param name="ct">A token to observe for cancellation.</param>
     /// <returns>
-    /// A successful output carrying the updated stored entity, or a failed output when no stored entity has a matching identifier.
+    /// A successful output carrying the updated stored entity, or a failed output carrying
+    /// <see cref="RelationalErrors.ConcurrencyMessage"/> when no stored entity has a matching identifier (and, for an
+    /// <see cref="IVersionedEntity"/>, concurrency stamp).
     /// </returns>
     public Task<DataOutput<T>> UpdateAsync(T entity, CancellationToken ct = default) =>
         Run(() => _store.Update(entity), ct);
 
-    /// <summary>Updates every entity that exists in the store, silently skipping identifiers that are not found.</summary>
+    /// <summary>Updates every entity in <paramref name="entities"/>, all or none: when any of them would update no stored entity
+    /// (see the single-entity update), nothing is updated.</summary>
     /// <param name="entities">The entities carrying the new values.</param>
     /// <param name="ct">A token to observe for cancellation.</param>
-    /// <returns>A successful output carrying the stored entities that were updated.</returns>
+    /// <returns>
+    /// A successful output carrying the updated stored entities, or a failed output carrying
+    /// <see cref="RelationalErrors.ConcurrencyMessage"/>.
+    /// </returns>
     public Task<DataOutput<IEnumerable<T>>> UpdateRangeAsync(IEnumerable<T> entities, CancellationToken ct = default) =>
         Run(() => _store.UpdateRange(entities), ct);
 
@@ -104,7 +115,9 @@ public class AsyncFakeRepository<T, TKey> : IAsyncRepository<T, TKey> where T : 
     /// <param name="entity">The entity to remove.</param>
     /// <param name="ct">A token to observe for cancellation.</param>
     /// <returns>
-    /// A successful output carrying the identifier of the removed entity, or a failed output when no stored entity has a matching identifier.
+    /// A successful output carrying the identifier of the removed entity, or a failed output carrying
+    /// <see cref="RelationalErrors.ConcurrencyMessage"/> when no stored entity has a matching identifier (and, for an
+    /// <see cref="IVersionedEntity"/>, concurrency stamp).
     /// </returns>
     public Task<DataOutput<TKey>> DeleteAsync(T entity, CancellationToken ct = default) =>
         Run(() => _store.Delete(entity), ct);

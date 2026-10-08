@@ -1,3 +1,4 @@
+using ArturRios.Data.Relational.Core.Repositories;
 using ArturRios.Util.Test.Mock;
 using Microsoft.EntityFrameworkCore;
 
@@ -35,13 +36,13 @@ public class AsyncFakeRepositoryTests
     }
 
     [Fact]
-    public async Task GivenAnUnknownId_WhenFetchingByIdAsynchronously_ThenAFailedOutputComesBack()
+    public async Task GivenAnUnknownId_WhenFetchingByIdAsynchronously_ThenASuccessfulOutputWithNoDataComesBack()
     {
         var repository = NewRepository();
 
         var result = await repository.GetByIdAsync(999);
 
-        Assert.False(result.Success);
+        Assert.True(result.Success);
         Assert.Null(result.Data);
     }
 
@@ -131,6 +132,7 @@ public class AsyncFakeRepositoryTests
         var result = await repository.UpdateAsync(new Person { Id = 42, Name = "Ghost" });
 
         Assert.False(result.Success);
+        Assert.Equal([RelationalErrors.ConcurrencyMessage], result.Errors);
         Assert.Null(result.Data);
     }
 
@@ -144,7 +146,7 @@ public class AsyncFakeRepositoryTests
 
         Assert.True(result.Success);
         Assert.Equal(id, result.Data);
-        Assert.False((await repository.GetByIdAsync(id)).Success);
+        Assert.Null((await repository.GetByIdAsync(id)).Data);
     }
 
     [Fact]
@@ -155,6 +157,7 @@ public class AsyncFakeRepositoryTests
         var result = await repository.DeleteAsync(new Person { Id = 42 });
 
         Assert.False(result.Success);
+        Assert.Equal([RelationalErrors.ConcurrencyMessage], result.Errors);
     }
 
     [Fact]
@@ -191,7 +194,7 @@ public class AsyncFakeRepositoryTests
     }
 
     [Fact]
-    public async Task GivenARangeContainingUnknownEntities_WhenUpdatingAsynchronously_ThenTheUnknownOnesAreSkipped()
+    public async Task GivenARangeContainingUnknownEntities_WhenUpdatingAsynchronously_ThenItFailsAndNothingIsUpdated()
     {
         var repository = NewRepository();
         var id = (await repository.CreateAsync(new Person { Name = "Ann" })).Data;
@@ -201,10 +204,9 @@ public class AsyncFakeRepositoryTests
             new Person { Id = 999, Name = "Ghost" }
         ]);
 
-        var updated = result.Data!.ToList();
-
-        Assert.Single(updated);
-        Assert.Equal("Ann Updated", updated[0].Name);
+        Assert.False(result.Success);
+        Assert.Equal([RelationalErrors.ConcurrencyMessage], result.Errors);
+        Assert.Equal("Ann", (await repository.GetByIdAsync(id)).Data!.Name);
     }
 
     [Fact]
@@ -219,9 +221,9 @@ public class AsyncFakeRepositoryTests
 
         Assert.True(result.Success);
         Assert.Equal([firstId, thirdId], result.Data);
-        Assert.True((await repository.GetByIdAsync(secondId)).Success);
-        Assert.False((await repository.GetByIdAsync(firstId)).Success);
-        Assert.False((await repository.GetByIdAsync(thirdId)).Success);
+        Assert.NotNull((await repository.GetByIdAsync(secondId)).Data);
+        Assert.Null((await repository.GetByIdAsync(firstId)).Data);
+        Assert.Null((await repository.GetByIdAsync(thirdId)).Data);
     }
 
     [Fact]
@@ -241,5 +243,33 @@ public class AsyncFakeRepositoryTests
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => repository.CreateAsync(new Person { Name = "Ann" }, cancelled));
         Assert.Empty(repository.Query());
+    }
+
+    [Fact]
+    public async Task GivenAVersionedEntityWithAStaleStamp_WhenUpdatingAsynchronously_ThenAConcurrencyConflictComesBack()
+    {
+        var repository = new AsyncFakeRepository<Account, long>();
+        var id = (await repository.CreateAsync(new Account { Owner = "Ann" })).Data;
+        var stamp = (await repository.GetByIdAsync(id)).Data!.ConcurrencyStamp;
+
+        var stale = await repository.UpdateAsync(new Account { Id = id, Owner = "Mallory" });
+        var current = await repository.UpdateAsync(new Account { Id = id, Owner = "Bob", ConcurrencyStamp = stamp });
+
+        Assert.Equal([RelationalErrors.ConcurrencyMessage], stale.Errors);
+        Assert.True(current.Success);
+        Assert.Equal("Bob", (await repository.GetByIdAsync(id)).Data!.Owner);
+        Assert.NotEqual(stamp, (await repository.GetByIdAsync(id)).Data!.ConcurrencyStamp);
+    }
+
+    [Fact]
+    public async Task GivenAFetchedList_WhenAnEntityIsCreatedAfterwards_ThenTheListDoesNotChange()
+    {
+        var repository = NewRepository();
+        await repository.CreateAsync(new Person { Name = "Ann" });
+
+        var all = (await repository.GetAllAsync()).Data!;
+        await repository.CreateAsync(new Person { Name = "Bob" });
+
+        Assert.Single(all);
     }
 }

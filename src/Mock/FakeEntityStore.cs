@@ -1,11 +1,15 @@
 using ArturRios.Data.Relational.Core.Entities;
+using ArturRios.Data.Relational.Core.Repositories;
 using ArturRios.Output;
 
 namespace ArturRios.Util.Test.Mock;
 
 /// <summary>
 /// The in-memory storage and semantics shared by <see cref="FakeRepository{T, TKey}"/> and
-/// <see cref="AsyncFakeRepository{T, TKey}"/>.
+/// <see cref="AsyncFakeRepository{T, TKey}"/>. Outcomes follow <see cref="EfRepository{T, TKey}"/>: an unknown id is a
+/// successful lookup with no data, writes that would affect no row (or a row whose <see cref="IVersionedEntity"/>
+/// stamp has moved on) fail with <see cref="RelationalErrors.ConcurrencyMessage"/> and change nothing, and an id
+/// that is already stored fails with <see cref="RelationalErrors.UniqueViolationMessage"/>.
 /// </summary>
 /// <typeparam name="T">The entity type.</typeparam>
 /// <typeparam name="TKey">The entity's primary key type.</typeparam>
@@ -25,16 +29,12 @@ internal sealed class FakeEntityStore<T, TKey> where T : Entity<TKey> where TKey
     /// <summary>The stored entities, in insertion order.</summary>
     public List<T> Items { get; } = [];
 
-    public DataOutput<IEnumerable<T>> GetAll() => DataOutput<IEnumerable<T>>.New.WithData(Items);
+    // A copy, as the real repository materializes a new list: handing out Items itself let a later write change
+    // a result the caller already holds, and made deleting while enumerating it throw.
+    public DataOutput<IEnumerable<T>> GetAll() => DataOutput<IEnumerable<T>>.New.WithData(Items.ToList());
 
-    public DataOutput<T?> GetById(TKey id)
-    {
-        var item = Find(id);
-
-        return item is null
-            ? DataOutput<T?>.New.WithError($"Entity with Id {id} not found")
-            : DataOutput<T?>.New.WithData(item);
-    }
+    // No match is a successful lookup with no data, as the repository contract and EfRepository define it.
+    public DataOutput<T?> GetById(TKey id) => DataOutput<T?>.New.WithData(Find(id));
 
     public DataOutput<TKey> Create(T entity)
     {
@@ -76,46 +76,51 @@ internal sealed class FakeEntityStore<T, TKey> where T : Entity<TKey> where TKey
 
     public DataOutput<T> Update(T entity)
     {
-        var existingItem = Find(entity.Id);
+        var existingItem = FindWritable(entity);
 
         if (existingItem is null)
         {
-            return DataOutput<T>.New.WithError($"Entity with Id {entity.Id} not found");
+            return DataOutput<T>.New.WithError(RelationalErrors.ConcurrencyMessage);
         }
 
-        CopyWritableProperties(entity, existingItem);
+        Apply(entity, existingItem);
 
         return DataOutput<T>.New.WithData(existingItem);
     }
 
     public DataOutput<IEnumerable<T>> UpdateRange(IEnumerable<T> entities)
     {
-        var updated = new List<T>();
+        // Check every entity before changing any, so a range with an unknown or stale entity fails as a whole and
+        // leaves the store untouched, as the real repository's single SaveChanges does.
+        var pairs = new List<(T Entity, T Existing)>();
 
         foreach (var entity in entities)
         {
-            var existingItem = Find(entity.Id);
+            var existingItem = FindWritable(entity);
 
             if (existingItem is null)
             {
-                // Entities that do not exist are silently skipped.
-                continue;
+                return DataOutput<IEnumerable<T>>.New.WithError(RelationalErrors.ConcurrencyMessage);
             }
 
-            CopyWritableProperties(entity, existingItem);
-            updated.Add(existingItem);
+            pairs.Add((entity, existingItem));
         }
 
-        return DataOutput<IEnumerable<T>>.New.WithData(updated);
+        foreach (var (entity, existingItem) in pairs)
+        {
+            Apply(entity, existingItem);
+        }
+
+        return DataOutput<IEnumerable<T>>.New.WithData(pairs.Select(pair => pair.Existing).ToList());
     }
 
     public DataOutput<TKey> Delete(T entity)
     {
-        var existingItem = Find(entity.Id);
+        var existingItem = FindWritable(entity);
 
         if (existingItem is null)
         {
-            return DataOutput<TKey>.New.WithError($"Entity with Id {entity.Id} not found");
+            return DataOutput<TKey>.New.WithError(RelationalErrors.ConcurrencyMessage);
         }
 
         Items.Remove(existingItem);
@@ -139,6 +144,46 @@ internal sealed class FakeEntityStore<T, TKey> where T : Entity<TKey> where TKey
     private T? Find(TKey id) => Items.FirstOrDefault(item => KeyComparer.Equals(item.Id, id));
 
     /// <summary>
+    /// The stored entity <paramref name="entity"/> may update or delete: the one with its id, provided that, for an
+    /// <see cref="IVersionedEntity"/>, it carries the stored <see cref="IVersionedEntity.ConcurrencyStamp"/>. The real
+    /// repository's UPDATE/DELETE matches on the id and the stamp, and affecting no row is a concurrency conflict.
+    /// </summary>
+    /// <returns>The stored entity, or <c>null</c> when the write would affect no row.</returns>
+    private T? FindWritable(T entity)
+    {
+        var existingItem = Find(entity.Id);
+
+        if (existingItem is IVersionedEntity stored && entity is IVersionedEntity incoming &&
+            stored.ConcurrencyStamp != incoming.ConcurrencyStamp)
+        {
+            return null;
+        }
+
+        return existingItem;
+    }
+
+    /// <summary>
+    /// Copies <paramref name="source"/> onto the stored <paramref name="target"/> and, for an
+    /// <see cref="IVersionedEntity"/>, issues a new stamp on both, as the real context does on every update.
+    /// </summary>
+    private static void Apply(T source, T target)
+    {
+        CopyWritableProperties(source, target);
+
+        if (target is not IVersionedEntity versioned)
+        {
+            return;
+        }
+
+        versioned.ConcurrencyStamp = Guid.NewGuid();
+
+        if (source is IVersionedEntity incoming)
+        {
+            incoming.ConcurrencyStamp = versioned.ConcurrencyStamp;
+        }
+    }
+
+    /// <summary>
     /// Gives <paramref name="entity"/> its identifier: a generated one when the store has a generator (overwriting
     /// any value the caller set), otherwise the caller-assigned one, which must be set and not yet stored.
     /// </summary>
@@ -155,7 +200,7 @@ internal sealed class FakeEntityStore<T, TKey> where T : Entity<TKey> where TKey
         }
 
         return Find(entity.Id) is not null || pendingIds.Contains(entity.Id)
-            ? $"Entity with Id {entity.Id} already exists"
+            ? RelationalErrors.UniqueViolationMessage
             : null;
     }
 
