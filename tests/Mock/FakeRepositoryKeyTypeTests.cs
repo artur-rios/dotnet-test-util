@@ -1,3 +1,4 @@
+using ArturRios.Data.Relational.Core.Repositories;
 using ArturRios.Util.Test.Mock;
 
 namespace ArturRios.Util.Test.Tests.Mock;
@@ -14,7 +15,7 @@ public class FakeRepositoryKeyTypeTests
 
         Assert.True(result.Success);
         Assert.Equal(1L, result.Data);
-        Assert.False(repository.GetById(42).Success);
+        Assert.Null(repository.GetById(42).Data);
     }
 
     [Fact]
@@ -92,6 +93,7 @@ public class FakeRepositoryKeyTypeTests
         var result = repository.Create(new Country { Id = "BR", Name = "Duplicate" });
 
         Assert.False(result.Success);
+        Assert.Equal([RelationalErrors.UniqueViolationMessage], result.Errors);
         Assert.Single(repository.Query());
         Assert.Equal("Brazil", repository.GetById("BR").Data!.Name);
     }
