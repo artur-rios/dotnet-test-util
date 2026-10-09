@@ -124,7 +124,7 @@ public sealed class RepositoryParityTests : IDisposable
     {
         foreach (var (name, repository) in AsyncRepositories<Person>())
         {
-            var result = await repository.GetByIdAsync(999);
+            var result = await repository.GetByIdAsync(999, TestContext.Current.CancellationToken);
 
             Assert.True(result.Success, name);
             Assert.Null(result.Data);
@@ -185,10 +185,11 @@ public sealed class RepositoryParityTests : IDisposable
     {
         foreach (var (name, repository) in AsyncRepositories<Person>())
         {
-            var id = (await repository.CreateAsync(new Person { Name = "Ann" })).Data;
+            var id = (await repository.CreateAsync(new Person { Name = "Ann" }, TestContext.Current.CancellationToken)).Data;
 
             var result = await repository.UpdateRangeAsync(
-                [new Person { Id = id, Name = "Ann Smith" }, new Person { Id = 999, Name = "Ghost" }]);
+                [new Person { Id = id, Name = "Ann Smith" }, new Person { Id = 999, Name = "Ghost" }],
+                    TestContext.Current.CancellationToken);
 
             AssertFailedWith(name, RelationalErrors.ConcurrencyMessage, result);
             Assert.Equal("Ann", repository.Query().AsNoTracking().Single(p => p.Id == id).Name);

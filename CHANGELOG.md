@@ -23,6 +23,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
     successful update issues a new stamp, as `BaseDbContext` does.
   - Creating an entity whose id is already stored fails with `RelationalErrors.UniqueViolationMessage` instead of
     `"Entity with Id … already exists"`.
+- **Breaking:** the package is built on xUnit v3 (4.0.2) instead of xUnit v2 (2.9.3). It references
+  `xunit.v3.extensibility.core` and `xunit.v3.assert` in place of `xunit`, so a test project using it moves to xUnit v3
+  too:
+  - Replace the `xunit` package with `xunit.v3`, or with `xunit.v3.mtp-off` to keep running through VSTest, and use
+    `xunit.runner.visualstudio` 4.x.
+  - Apply the [xUnit v3 migration guide](https://xunit.net/docs/getting-started/v3/migration) to the project's own
+    code, for example `IAsyncLifetime` returning `ValueTask`.
+  - `UnitFact`, `UnitTheory`, `FunctionalFact` and `FunctionalTheory` keep their parameters and their `Category`
+    trait. They now publish the trait through xUnit v3's `ITraitAttribute.GetTraits()`, so
+    `TestTypeTraitDiscoverer`, which xUnit v2 needed, is removed. They also take xUnit v3's compiler-supplied
+    `sourceFilePath` and `sourceLineNumber`, so test results point at the test's own declaration.
 
 ### Fixed
 
