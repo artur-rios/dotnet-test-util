@@ -53,6 +53,9 @@ All four share the same two optional parameters:
 UnitFact(EnvironmentType[]? environments = null, bool skipCondition = false)
 ```
 
+Like xUnit's own attributes, they also take `sourceFilePath` and `sourceLineNumber`, which the compiler fills in
+so xUnit can report where each test is declared. Never pass them yourself.
+
 - **`environments`** — the environments in which the test **must not** run. The current environment is read
   from the `ASPNETCORE_ENVIRONMENT` variable and compared case-insensitively. When it matches one of the
   listed environments, the test is skipped with the reason `Test can't run on {environment}`. `null` (the

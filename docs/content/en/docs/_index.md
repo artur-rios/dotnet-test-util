@@ -16,13 +16,17 @@ test attributes, in-memory fakes for repositories and schedulers, and a base cla
 dotnet add package ArturRios.Util.Test
 ```
 
+It is built on xUnit v3, so the test project references `xunit.v3`, or `xunit.v3.mtp-off` to keep running
+through VSTest. Versions before 5.0 are built on xUnit v2.
+
 The package targets **net10.0** and builds on other `ArturRios.*` packages
 ([`ArturRios.Util`](https://www.nuget.org/packages/ArturRios.Util),
 [`ArturRios.Data.Relational.Core`](https://www.nuget.org/packages/ArturRios.Data.Relational.Core),
 [`ArturRios.Mediator`](https://www.nuget.org/packages/ArturRios.Mediator),
 [`ArturRios.Configuration`](https://www.nuget.org/packages/ArturRios.Configuration) and
-[`ArturRios.Util.WebApi`](https://www.nuget.org/packages/ArturRios.Util.WebApi)) plus `xunit`,
-`Microsoft.AspNetCore.Mvc.Testing` and `Microsoft.EntityFrameworkCore`.
+[`ArturRios.Util.WebApi`](https://www.nuget.org/packages/ArturRios.Util.WebApi)) plus xUnit v3's
+`xunit.v3.extensibility.core` and `xunit.v3.assert`, `Microsoft.AspNetCore.Mvc.Testing` and
+`Microsoft.EntityFrameworkCore`.
 
 ## What's inside
 
