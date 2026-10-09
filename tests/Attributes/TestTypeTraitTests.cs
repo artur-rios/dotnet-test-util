@@ -1,6 +1,5 @@
 using ArturRios.Util.Test.Attributes;
-using Xunit.Abstractions;
-using Xunit.Sdk;
+using Xunit.v3;
 
 namespace ArturRios.Util.Test.Tests.Attributes;
 
@@ -40,7 +39,12 @@ public class TestTypeTraitTests
     {
         var attribute = GetTestAttribute(methodName);
 
-        var testType = attribute.GetNamedArgument<TestType>(nameof(CustomFactAttribute.TestType));
+        var testType = attribute switch
+        {
+            CustomFactAttribute fact => fact.TestType,
+            CustomTheoryAttribute theory => theory.TestType,
+            _ => throw new InvalidOperationException($"{methodName} carries no custom test attribute.")
+        };
 
         Assert.Equal(expected, testType);
     }
@@ -50,23 +54,19 @@ public class TestTypeTraitTests
     [InlineData(nameof(Marked.UnitTheory), "Unit")]
     [InlineData(nameof(Marked.FunctionalFact), "Functional")]
     [InlineData(nameof(Marked.FunctionalTheory), "Functional")]
-    public void GivenACustomAttribute_WhenTheDiscovererRunsOverIt_ThenACategoryTraitIsYielded(string methodName, string expectedValue)
+    public void GivenACustomAttribute_WhenItsTraitsAreRead_ThenACategoryTraitIsYielded(string methodName, string expectedValue)
     {
         var attribute = GetTestAttribute(methodName);
 
-        var trait = Assert.Single(new TestTypeTraitDiscoverer().GetTraits(attribute));
+        var trait = Assert.Single(attribute.GetTraits());
 
         Assert.Equal("Category", trait.Key);
         Assert.Equal(expectedValue, trait.Value);
     }
 
-    // Wraps the custom test attribute applied to Marked.<methodName> in xUnit's own reflection
-    // shim, so the discoverer is exercised exactly as it is during test discovery.
-    private static IAttributeInfo GetTestAttribute(string methodName)
-    {
-        var method = typeof(Marked).GetMethod(methodName)!;
-        var data = method.CustomAttributes.Single(a => typeof(ITraitAttribute).IsAssignableFrom(a.AttributeType));
-
-        return new ReflectionAttributeInfo(data);
-    }
+    // Reads back the custom test attribute applied to Marked.<methodName>. xUnit v3 discovers
+    // traits by calling ITraitAttribute.GetTraits() on the attribute itself, so this exercises the
+    // same call test discovery makes.
+    private static ITraitAttribute GetTestAttribute(string methodName) =>
+        typeof(Marked).GetMethod(methodName)!.GetCustomAttributes(inherit: false).OfType<ITraitAttribute>().Single();
 }

@@ -1,3 +1,4 @@
+using ArturRios.Data.Relational.Core.Repositories;
 using ArturRios.Util.Test.Mock;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,8 +14,8 @@ public class AsyncFakeRepositoryTests
     {
         var repository = NewRepository();
 
-        var firstResult = await repository.CreateAsync(new Person { Name = "Ann" });
-        var secondResult = await repository.CreateAsync(new Person { Name = "Bob" });
+        var firstResult = await repository.CreateAsync(new Person { Name = "Ann" }, TestContext.Current.CancellationToken);
+        var secondResult = await repository.CreateAsync(new Person { Name = "Bob" }, TestContext.Current.CancellationToken);
 
         Assert.True(firstResult.Success);
         Assert.Equal(1, firstResult.Data);
@@ -25,9 +26,9 @@ public class AsyncFakeRepositoryTests
     public async Task GivenAStoredEntity_WhenFetchingItByIdAsynchronously_ThenItComesBack()
     {
         var repository = NewRepository();
-        var id = (await repository.CreateAsync(new Person { Name = "Ann", Age = 30 })).Data;
+        var id = (await repository.CreateAsync(new Person { Name = "Ann", Age = 30 }, TestContext.Current.CancellationToken)).Data;
 
-        var found = await repository.GetByIdAsync(id);
+        var found = await repository.GetByIdAsync(id, TestContext.Current.CancellationToken);
 
         Assert.True(found.Success);
         Assert.NotNull(found.Data);
@@ -35,13 +36,13 @@ public class AsyncFakeRepositoryTests
     }
 
     [Fact]
-    public async Task GivenAnUnknownId_WhenFetchingByIdAsynchronously_ThenAFailedOutputComesBack()
+    public async Task GivenAnUnknownId_WhenFetchingByIdAsynchronously_ThenASuccessfulOutputWithNoDataComesBack()
     {
         var repository = NewRepository();
 
-        var result = await repository.GetByIdAsync(999);
+        var result = await repository.GetByIdAsync(999, TestContext.Current.CancellationToken);
 
-        Assert.False(result.Success);
+        Assert.True(result.Success);
         Assert.Null(result.Data);
     }
 
@@ -49,10 +50,10 @@ public class AsyncFakeRepositoryTests
     public async Task GivenStoredEntities_WhenFetchingAllAsynchronously_ThenEveryOneComesBack()
     {
         var repository = NewRepository();
-        await repository.CreateAsync(new Person { Name = "Ann" });
-        await repository.CreateAsync(new Person { Name = "Bob" });
+        await repository.CreateAsync(new Person { Name = "Ann" }, TestContext.Current.CancellationToken);
+        await repository.CreateAsync(new Person { Name = "Bob" }, TestContext.Current.CancellationToken);
 
-        var all = await repository.GetAllAsync();
+        var all = await repository.GetAllAsync(TestContext.Current.CancellationToken);
 
         Assert.True(all.Success);
         Assert.Equal(2, all.Data!.Count());
@@ -62,8 +63,8 @@ public class AsyncFakeRepositoryTests
     public async Task GivenStoredEntities_WhenQueryingAsynchronously_ThenEveryOneComesBack()
     {
         var repository = NewRepository();
-        await repository.CreateAsync(new Person { Name = "Ann" });
-        await repository.CreateAsync(new Person { Name = "Bob" });
+        await repository.CreateAsync(new Person { Name = "Ann" }, TestContext.Current.CancellationToken);
+        await repository.CreateAsync(new Person { Name = "Bob" }, TestContext.Current.CancellationToken);
 
         var all = repository.Query().ToList();
 
@@ -74,10 +75,10 @@ public class AsyncFakeRepositoryTests
     public async Task GivenTheFakeQuery_WhenMaterialisedWithToListAsync_ThenItIsSupported()
     {
         var repository = NewRepository();
-        await repository.CreateAsync(new Person { Name = "Ann", Age = 30 });
-        await repository.CreateAsync(new Person { Name = "Bob", Age = 25 });
+        await repository.CreateAsync(new Person { Name = "Ann", Age = 30 }, TestContext.Current.CancellationToken);
+        await repository.CreateAsync(new Person { Name = "Bob", Age = 25 }, TestContext.Current.CancellationToken);
 
-        var adults = await repository.Query().Where(p => p.Age >= 18).ToListAsync();
+        var adults = await repository.Query().Where(p => p.Age >= 18).ToListAsync(TestContext.Current.CancellationToken);
 
         Assert.Equal(2, adults.Count);
     }
@@ -86,10 +87,10 @@ public class AsyncFakeRepositoryTests
     public async Task GivenTheFakeQuery_WhenMaterialisedWithFirstOrDefaultAsync_ThenItIsSupported()
     {
         var repository = NewRepository();
-        await repository.CreateAsync(new Person { Name = "Ann" });
-        await repository.CreateAsync(new Person { Name = "Bob" });
+        await repository.CreateAsync(new Person { Name = "Ann" }, TestContext.Current.CancellationToken);
+        await repository.CreateAsync(new Person { Name = "Bob" }, TestContext.Current.CancellationToken);
 
-        var bob = await repository.Query().FirstOrDefaultAsync(p => p.Name == "Bob");
+        var bob = await repository.Query().FirstOrDefaultAsync(p => p.Name == "Bob", TestContext.Current.CancellationToken);
 
         Assert.NotNull(bob);
         Assert.Equal("Bob", bob.Name);
@@ -99,10 +100,10 @@ public class AsyncFakeRepositoryTests
     public async Task GivenTheFakeQuery_WhenMaterialisedWithCountAsync_ThenItIsSupported()
     {
         var repository = NewRepository();
-        await repository.CreateAsync(new Person { Name = "Ann", Age = 30 });
-        await repository.CreateAsync(new Person { Name = "Bob", Age = 15 });
+        await repository.CreateAsync(new Person { Name = "Ann", Age = 30 }, TestContext.Current.CancellationToken);
+        await repository.CreateAsync(new Person { Name = "Bob", Age = 15 }, TestContext.Current.CancellationToken);
 
-        var adultCount = await repository.Query().CountAsync(p => p.Age >= 18);
+        var adultCount = await repository.Query().CountAsync(p => p.Age >= 18, TestContext.Current.CancellationToken);
 
         Assert.Equal(1, adultCount);
     }
@@ -111,16 +112,17 @@ public class AsyncFakeRepositoryTests
     public async Task GivenAStoredEntity_WhenUpdatedAsynchronously_ThenWritablePropertiesAreCopiedAndTheIdIsKept()
     {
         var repository = NewRepository();
-        var id = (await repository.CreateAsync(new Person { Name = "Ann", Age = 30 })).Data;
+        var id = (await repository.CreateAsync(new Person { Name = "Ann", Age = 30 }, TestContext.Current.CancellationToken)).Data;
 
-        var result = await repository.UpdateAsync(new Person { Id = id, Name = "Ann Updated", Age = 31 });
+        var result = await repository.UpdateAsync(new Person { Id = id, Name = "Ann Updated", Age = 31 },
+            TestContext.Current.CancellationToken);
 
         Assert.True(result.Success);
         Assert.NotNull(result.Data);
         Assert.Equal(id, result.Data.Id);
         Assert.Equal("Ann Updated", result.Data.Name);
         Assert.Equal(31, result.Data.Age);
-        Assert.Equal("Ann Updated", (await repository.GetByIdAsync(id)).Data!.Name);
+        Assert.Equal("Ann Updated", (await repository.GetByIdAsync(id, TestContext.Current.CancellationToken)).Data!.Name);
     }
 
     [Fact]
@@ -128,9 +130,10 @@ public class AsyncFakeRepositoryTests
     {
         var repository = NewRepository();
 
-        var result = await repository.UpdateAsync(new Person { Id = 42, Name = "Ghost" });
+        var result = await repository.UpdateAsync(new Person { Id = 42, Name = "Ghost" }, TestContext.Current.CancellationToken);
 
         Assert.False(result.Success);
+        Assert.Equal([RelationalErrors.ConcurrencyMessage], result.Errors);
         Assert.Null(result.Data);
     }
 
@@ -138,13 +141,13 @@ public class AsyncFakeRepositoryTests
     public async Task GivenAStoredEntity_WhenDeletedAsynchronously_ThenItIsRemovedAndItsIdComesBack()
     {
         var repository = NewRepository();
-        var id = (await repository.CreateAsync(new Person { Name = "Ann" })).Data;
+        var id = (await repository.CreateAsync(new Person { Name = "Ann" }, TestContext.Current.CancellationToken)).Data;
 
-        var result = await repository.DeleteAsync(new Person { Id = id });
+        var result = await repository.DeleteAsync(new Person { Id = id }, TestContext.Current.CancellationToken);
 
         Assert.True(result.Success);
         Assert.Equal(id, result.Data);
-        Assert.False((await repository.GetByIdAsync(id)).Success);
+        Assert.Null((await repository.GetByIdAsync(id, TestContext.Current.CancellationToken)).Data);
     }
 
     [Fact]
@@ -152,9 +155,10 @@ public class AsyncFakeRepositoryTests
     {
         var repository = NewRepository();
 
-        var result = await repository.DeleteAsync(new Person { Id = 42 });
+        var result = await repository.DeleteAsync(new Person { Id = 42 }, TestContext.Current.CancellationToken);
 
         Assert.False(result.Success);
+        Assert.Equal([RelationalErrors.ConcurrencyMessage], result.Errors);
     }
 
     [Fact]
@@ -165,63 +169,62 @@ public class AsyncFakeRepositoryTests
         var result = await repository.CreateRangeAsync([
             new Person { Name = "Ann" },
             new Person { Name = "Bob" }
-        ]);
+        ], TestContext.Current.CancellationToken);
 
         Assert.True(result.Success);
         Assert.Equal([1L, 2L], result.Data);
-        Assert.Equal(2, (await repository.GetAllAsync()).Data!.Count());
+        Assert.Equal(2, (await repository.GetAllAsync(TestContext.Current.CancellationToken)).Data!.Count());
     }
 
     [Fact]
     public async Task GivenStoredEntities_WhenUpdatingARangeAsynchronously_ThenTheyAreUpdatedAndComeBack()
     {
         var repository = NewRepository();
-        var firstId = (await repository.CreateAsync(new Person { Name = "Ann" })).Data;
-        var secondId = (await repository.CreateAsync(new Person { Name = "Bob" })).Data;
+        var firstId = (await repository.CreateAsync(new Person { Name = "Ann" }, TestContext.Current.CancellationToken)).Data;
+        var secondId = (await repository.CreateAsync(new Person { Name = "Bob" }, TestContext.Current.CancellationToken)).Data;
 
         var result = await repository.UpdateRangeAsync([
             new Person { Id = firstId, Name = "Ann Updated" },
             new Person { Id = secondId, Name = "Bob Updated" }
-        ]);
+        ], TestContext.Current.CancellationToken);
 
         Assert.True(result.Success);
         Assert.Equal(2, result.Data!.Count());
-        Assert.Equal("Ann Updated", (await repository.GetByIdAsync(firstId)).Data!.Name);
-        Assert.Equal("Bob Updated", (await repository.GetByIdAsync(secondId)).Data!.Name);
+        Assert.Equal("Ann Updated", (await repository.GetByIdAsync(firstId, TestContext.Current.CancellationToken)).Data!.Name);
+        Assert.Equal("Bob Updated", (await repository.GetByIdAsync(secondId, TestContext.Current.CancellationToken)).Data!.Name);
     }
 
     [Fact]
-    public async Task GivenARangeContainingUnknownEntities_WhenUpdatingAsynchronously_ThenTheUnknownOnesAreSkipped()
+    public async Task GivenARangeContainingUnknownEntities_WhenUpdatingAsynchronously_ThenItFailsAndNothingIsUpdated()
     {
         var repository = NewRepository();
-        var id = (await repository.CreateAsync(new Person { Name = "Ann" })).Data;
+        var id = (await repository.CreateAsync(new Person { Name = "Ann" }, TestContext.Current.CancellationToken)).Data;
 
         var result = await repository.UpdateRangeAsync([
             new Person { Id = id, Name = "Ann Updated" },
             new Person { Id = 999, Name = "Ghost" }
-        ]);
+        ], TestContext.Current.CancellationToken);
 
-        var updated = result.Data!.ToList();
-
-        Assert.Single(updated);
-        Assert.Equal("Ann Updated", updated[0].Name);
+        Assert.False(result.Success);
+        Assert.Equal([RelationalErrors.ConcurrencyMessage], result.Errors);
+        Assert.Equal("Ann", (await repository.GetByIdAsync(id, TestContext.Current.CancellationToken)).Data!.Name);
     }
 
     [Fact]
     public async Task GivenStoredEntities_WhenDeletingARangeAsynchronously_ThenTheMatchingOnesAreRemovedAndTheirIdsComeBack()
     {
         var repository = NewRepository();
-        var firstId = (await repository.CreateAsync(new Person { Name = "Ann" })).Data;
-        var secondId = (await repository.CreateAsync(new Person { Name = "Bob" })).Data;
-        var thirdId = (await repository.CreateAsync(new Person { Name = "Cal" })).Data;
+        var firstId = (await repository.CreateAsync(new Person { Name = "Ann" }, TestContext.Current.CancellationToken)).Data;
+        var secondId = (await repository.CreateAsync(new Person { Name = "Bob" }, TestContext.Current.CancellationToken)).Data;
+        var thirdId = (await repository.CreateAsync(new Person { Name = "Cal" }, TestContext.Current.CancellationToken)).Data;
 
-        var result = await repository.DeleteRangeAsync([firstId, thirdId, 999]);
+        var result = await repository.DeleteRangeAsync([firstId, thirdId, 999], TestContext.Current.CancellationToken);
 
         Assert.True(result.Success);
         Assert.Equal([firstId, thirdId], result.Data);
-        Assert.True((await repository.GetByIdAsync(secondId)).Success);
-        Assert.False((await repository.GetByIdAsync(firstId)).Success);
-        Assert.False((await repository.GetByIdAsync(thirdId)).Success);
+        Assert.NotNull((await repository.GetByIdAsync(secondId, TestContext.Current.CancellationToken)).Data);
+        Assert.Null((await repository.GetByIdAsync(firstId, TestContext.Current.CancellationToken)).Data);
+        Assert.Null((await repository.GetByIdAsync(thirdId, TestContext.Current.CancellationToken)).Data);
     }
 
     [Fact]
@@ -241,5 +244,34 @@ public class AsyncFakeRepositoryTests
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => repository.CreateAsync(new Person { Name = "Ann" }, cancelled));
         Assert.Empty(repository.Query());
+    }
+
+    [Fact]
+    public async Task GivenAVersionedEntityWithAStaleStamp_WhenUpdatingAsynchronously_ThenAConcurrencyConflictComesBack()
+    {
+        var repository = new AsyncFakeRepository<Account, long>();
+        var id = (await repository.CreateAsync(new Account { Owner = "Ann" }, TestContext.Current.CancellationToken)).Data;
+        var stamp = (await repository.GetByIdAsync(id, TestContext.Current.CancellationToken)).Data!.ConcurrencyStamp;
+
+        var stale = await repository.UpdateAsync(new Account { Id = id, Owner = "Mallory" }, TestContext.Current.CancellationToken);
+        var current = await repository.UpdateAsync(new Account { Id = id, Owner = "Bob", ConcurrencyStamp = stamp },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal([RelationalErrors.ConcurrencyMessage], stale.Errors);
+        Assert.True(current.Success);
+        Assert.Equal("Bob", (await repository.GetByIdAsync(id, TestContext.Current.CancellationToken)).Data!.Owner);
+        Assert.NotEqual(stamp, (await repository.GetByIdAsync(id, TestContext.Current.CancellationToken)).Data!.ConcurrencyStamp);
+    }
+
+    [Fact]
+    public async Task GivenAFetchedList_WhenAnEntityIsCreatedAfterwards_ThenTheListDoesNotChange()
+    {
+        var repository = NewRepository();
+        await repository.CreateAsync(new Person { Name = "Ann" }, TestContext.Current.CancellationToken);
+
+        var all = (await repository.GetAllAsync(TestContext.Current.CancellationToken)).Data!;
+        await repository.CreateAsync(new Person { Name = "Bob" }, TestContext.Current.CancellationToken);
+
+        Assert.Single(all);
     }
 }

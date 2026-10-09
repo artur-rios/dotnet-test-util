@@ -1,3 +1,4 @@
+using ArturRios.Data.Relational.Core.Repositories;
 using ArturRios.Util.Test.Mock;
 
 namespace ArturRios.Util.Test.Tests.Mock;
@@ -34,13 +35,13 @@ public class FakeRepositoryTests
     }
 
     [Fact]
-    public void GivenAnUnknownId_WhenFetchingById_ThenAFailedOutputComesBack()
+    public void GivenAnUnknownId_WhenFetchingById_ThenASuccessfulOutputWithNoDataComesBack()
     {
         var repository = NewRepository();
 
         var result = repository.GetById(999);
 
-        Assert.False(result.Success);
+        Assert.True(result.Success);
         Assert.Null(result.Data);
     }
 
@@ -93,6 +94,7 @@ public class FakeRepositoryTests
         var result = repository.Update(new Person { Id = 42, Name = "Ghost" });
 
         Assert.False(result.Success);
+        Assert.Equal([RelationalErrors.ConcurrencyMessage], result.Errors);
         Assert.Null(result.Data);
     }
 
@@ -106,7 +108,7 @@ public class FakeRepositoryTests
 
         Assert.True(result.Success);
         Assert.Equal(id, result.Data);
-        Assert.False(repository.GetById(id).Success);
+        Assert.Null(repository.GetById(id).Data);
     }
 
     [Fact]
@@ -117,6 +119,7 @@ public class FakeRepositoryTests
         var result = repository.Delete(new Person { Id = 42 });
 
         Assert.False(result.Success);
+        Assert.Equal([RelationalErrors.ConcurrencyMessage], result.Errors);
     }
 
     [Fact]
@@ -153,7 +156,7 @@ public class FakeRepositoryTests
     }
 
     [Fact]
-    public void GivenARangeContainingUnknownEntities_WhenUpdating_ThenTheUnknownOnesAreSkipped()
+    public void GivenARangeContainingUnknownEntities_WhenUpdating_ThenItFailsAndNothingIsUpdated()
     {
         var repository = NewRepository();
         var id = repository.Create(new Person { Name = "Ann" }).Data;
@@ -163,10 +166,9 @@ public class FakeRepositoryTests
             new Person { Id = 999, Name = "Ghost" }
         ]);
 
-        var updated = result.Data!.ToList();
-
-        Assert.Single(updated);
-        Assert.Equal("Ann Updated", updated[0].Name);
+        Assert.False(result.Success);
+        Assert.Equal([RelationalErrors.ConcurrencyMessage], result.Errors);
+        Assert.Equal("Ann", repository.GetById(id).Data!.Name);
     }
 
     [Fact]
@@ -181,8 +183,8 @@ public class FakeRepositoryTests
 
         Assert.True(result.Success);
         Assert.Equal([firstId, thirdId], result.Data);
-        Assert.True(repository.GetById(secondId).Success);
-        Assert.False(repository.GetById(firstId).Success);
-        Assert.False(repository.GetById(thirdId).Success);
+        Assert.NotNull(repository.GetById(secondId).Data);
+        Assert.Null(repository.GetById(firstId).Data);
+        Assert.Null(repository.GetById(thirdId).Data);
     }
 }

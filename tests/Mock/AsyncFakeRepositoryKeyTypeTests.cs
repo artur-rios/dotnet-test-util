@@ -11,11 +11,11 @@ public class AsyncFakeRepositoryKeyTypeTests
     {
         var repository = new AsyncFakeRepository<Person, long>();
 
-        var result = await repository.CreateAsync(new Person { Id = 42, Name = "Ann" });
+        var result = await repository.CreateAsync(new Person { Id = 42, Name = "Ann" }, TestContext.Current.CancellationToken);
 
         Assert.True(result.Success);
         Assert.Equal(1L, result.Data);
-        Assert.False((await repository.GetByIdAsync(42)).Success);
+        Assert.Null((await repository.GetByIdAsync(42, TestContext.Current.CancellationToken)).Data);
     }
 
     [Fact]
@@ -23,8 +23,9 @@ public class AsyncFakeRepositoryKeyTypeTests
     {
         var repository = new AsyncFakeRepository<Counter, int>();
 
-        var first = await repository.CreateAsync(new Counter { Label = "a" });
-        var range = await repository.CreateRangeAsync([new Counter { Label = "b" }, new Counter { Label = "c" }]);
+        var first = await repository.CreateAsync(new Counter { Label = "a" }, TestContext.Current.CancellationToken);
+        var range = await repository.CreateRangeAsync([new Counter { Label = "b" }, new Counter { Label = "c" }],
+            TestContext.Current.CancellationToken);
 
         Assert.Equal(1, first.Data);
         Assert.Equal([2, 3], range.Data);
@@ -35,11 +36,11 @@ public class AsyncFakeRepositoryKeyTypeTests
     {
         var repository = new AsyncFakeRepository<Device, Guid>();
 
-        var id = (await repository.CreateAsync(new Device { Model = "X1" })).Data;
+        var id = (await repository.CreateAsync(new Device { Model = "X1" }, TestContext.Current.CancellationToken)).Data;
 
         Assert.NotEqual(Guid.Empty, id);
-        Assert.Equal("X1", (await repository.GetByIdAsync(id)).Data!.Model);
-        Assert.NotNull(await repository.Query().FirstOrDefaultAsync(d => d.Id == id));
+        Assert.Equal("X1", (await repository.GetByIdAsync(id, TestContext.Current.CancellationToken)).Data!.Model);
+        Assert.NotNull(await repository.Query().FirstOrDefaultAsync(d => d.Id == id, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -47,11 +48,11 @@ public class AsyncFakeRepositoryKeyTypeTests
     {
         var repository = new AsyncFakeRepository<Country, string>();
 
-        var result = await repository.CreateAsync(new Country { Id = "BR", Name = "Brazil" });
+        var result = await repository.CreateAsync(new Country { Id = "BR", Name = "Brazil" }, TestContext.Current.CancellationToken);
 
         Assert.True(result.Success);
         Assert.Equal("BR", result.Data);
-        Assert.Equal("Brazil", (await repository.GetByIdAsync("BR")).Data!.Name);
+        Assert.Equal("Brazil", (await repository.GetByIdAsync("BR", TestContext.Current.CancellationToken)).Data!.Name);
     }
 
     [Fact]
@@ -59,7 +60,7 @@ public class AsyncFakeRepositoryKeyTypeTests
     {
         var repository = new AsyncFakeRepository<Country, string>();
 
-        var result = await repository.CreateAsync(new Country { Name = "Nowhere" });
+        var result = await repository.CreateAsync(new Country { Name = "Nowhere" }, TestContext.Current.CancellationToken);
 
         Assert.False(result.Success);
         Assert.Empty(repository.Query());
@@ -72,14 +73,14 @@ public class AsyncFakeRepositoryKeyTypeTests
         await repository.CreateRangeAsync([
             new Country { Id = "BR", Name = "Brazil" },
             new Country { Id = "PT", Name = "Portugal" }
-        ]);
+        ], TestContext.Current.CancellationToken);
 
-        var updated = await repository.UpdateAsync(new Country { Id = "BR", Name = "Brasil" });
-        var deleted = await repository.DeleteRangeAsync(["PT"]);
+        var updated = await repository.UpdateAsync(new Country { Id = "BR", Name = "Brasil" }, TestContext.Current.CancellationToken);
+        var deleted = await repository.DeleteRangeAsync(["PT"], TestContext.Current.CancellationToken);
 
         Assert.Equal("Brasil", updated.Data!.Name);
         Assert.Equal(["PT"], deleted.Data);
-        Assert.Equal("BR", Assert.Single(await repository.Query().ToListAsync()).Id);
+        Assert.Equal("BR", Assert.Single(await repository.Query().ToListAsync(TestContext.Current.CancellationToken)).Id);
     }
 
     [Fact]
@@ -88,7 +89,8 @@ public class AsyncFakeRepositoryKeyTypeTests
         var next = 0;
         var repository = new AsyncFakeRepository<Country, string>(() => $"C{++next}");
 
-        var result = await repository.CreateRangeAsync([new Country { Name = "Brazil" }, new Country { Name = "Portugal" }]);
+        var result = await repository.CreateRangeAsync([new Country { Name = "Brazil" }, new Country { Name = "Portugal" }],
+            TestContext.Current.CancellationToken);
 
         Assert.Equal(["C1", "C2"], result.Data);
     }

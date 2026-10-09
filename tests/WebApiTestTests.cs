@@ -38,7 +38,7 @@ public class WebApiTestTests : WebApiTest<Program>
     [Fact]
     public async Task GivenNoAuthorization_WhenCallingASecuredEndpoint_ThenUnauthorizedComesBack()
     {
-        var response = await Gateway.GetAsync<string>("/secure");
+        var response = await Gateway.GetAsync<string>("/secure", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -48,7 +48,7 @@ public class WebApiTestTests : WebApiTest<Program>
     {
         Authorize(IssuedToken);
 
-        var response = await Gateway.GetAsync<string>("/secure");
+        var response = await Gateway.GetAsync<string>("/secure", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
@@ -58,7 +58,7 @@ public class WebApiTestTests : WebApiTest<Program>
     {
         await AuthenticateAndAuthorizeAsync(ValidCredentials, "/auth");
 
-        var response = await Gateway.GetAsync<string>("/secure");
+        var response = await Gateway.GetAsync<string>("/secure", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }

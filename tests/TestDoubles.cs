@@ -32,6 +32,12 @@ public class Country : Entity<string>
     public string Name { get; set; } = string.Empty;
 }
 
+/// <summary><see cref="long"/>-keyed entity with an optimistic-concurrency stamp, used to exercise the fakes' stamp checks.</summary>
+public class Account : VersionedEntity<long>
+{
+    public string Owner { get; set; } = string.Empty;
+}
+
 /// <summary>Command dispatched by the scheduler tests.</summary>
 public class PingCommand : BaseCommand
 {
