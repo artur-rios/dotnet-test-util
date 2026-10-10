@@ -7,11 +7,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [5.0.0] - 2026-10-09
+
 ### Changed
 
 - **Breaking:** `FakeRepository<T, TKey>` and `AsyncFakeRepository<T, TKey>` now produce the outcomes
   `EfRepository<T, TKey>` (`ArturRios.Data.Relational.Core`) produces, so a test that passes against a fake no longer
-  passes where the deployed repository would fail. Releasing this needs a major version bump.
+  passes where the deployed repository would fail. See [Upgrading from 4.x to 5.0](#upgrading-from-4x-to-50).
   - `GetById`/`GetByIdAsync` with an unknown id return a **successful** output with `null` data, as the repository
     contract specifies, instead of a failed one. Check `Data`, not `Success`, for "not found".
   - `Update`, `Delete` and their async forms fail with `RelationalErrors.ConcurrencyMessage` (instead of
@@ -25,20 +27,39 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
     `"Entity with Id … already exists"`.
 - **Breaking:** the package is built on xUnit v3 (4.0.2) instead of xUnit v2 (2.9.3). It references
   `xunit.v3.extensibility.core` and `xunit.v3.assert` in place of `xunit`, so a test project using it moves to xUnit v3
-  too:
-  - Replace the `xunit` package with `xunit.v3`, or with `xunit.v3.mtp-off` to keep running through VSTest, and use
-    `xunit.runner.visualstudio` 4.x.
-  - Apply the [xUnit v3 migration guide](https://xunit.net/docs/getting-started/v3/migration) to the project's own
-    code, for example `IAsyncLifetime` returning `ValueTask`.
-  - `UnitFact`, `UnitTheory`, `FunctionalFact` and `FunctionalTheory` keep their parameters and their `Category`
-    trait. They now publish the trait through xUnit v3's `ITraitAttribute.GetTraits()`, so
-    `TestTypeTraitDiscoverer`, which xUnit v2 needed, is removed. They also take xUnit v3's compiler-supplied
-    `sourceFilePath` and `sourceLineNumber`, so test results point at the test's own declaration.
+  too. `UnitFact`, `UnitTheory`, `FunctionalFact` and `FunctionalTheory` keep their parameters and their `Category`
+  trait, which they now publish through xUnit v3's `ITraitAttribute.GetTraits()`. They also take xUnit v3's
+  compiler-supplied `sourceFilePath` and `sourceLineNumber`, so test results point at the test's own declaration.
+
+### Removed
+
+- `TestTypeTraitDiscoverer`. xUnit v2 needed it to read the `Category` trait; xUnit v3 reads it from the attributes.
 
 ### Fixed
 
 - `GetAll`/`GetAllAsync` return a snapshot. They returned the fakes' backing list itself, so a later write changed a
   result the caller already held, and deleting entities while enumerating it threw `InvalidOperationException`.
+
+### Upgrading from 4.x to 5.0
+
+Move the test project to xUnit v3:
+
+- Replace the `xunit` package with `xunit.v3`, or with `xunit.v3.mtp-off` to keep running through VSTest so that
+  `dotnet test`, its `--filter` and `.runsettings` loggers work as before. Use `xunit.runner.visualstudio` 4.x.
+- Apply the [xUnit v3 migration guide](https://xunit.net/docs/getting-started/v3/migration) to the project's own code,
+  for example `IAsyncLifetime` members returning `ValueTask`, and `[assembly: Parallelization(...)]` in place of
+  `CollectionBehavior(DisableTestParallelization = ...)`.
+- Tests marked with the custom attributes need no change, and `--filter "Category=Unit"` selects the same tests.
+
+Then check tests that assert on the fakes' failures:
+
+| 4.x | 5.0 |
+|---|---|
+| `GetById` with an unknown id fails | It succeeds with `null` data: check `Data`, not `Success` |
+| Unknown id in `Update`/`Delete`: `"Entity with Id … not found"` | `RelationalErrors.ConcurrencyMessage` |
+| `UpdateRange` skips unknown ids | It fails with `RelationalErrors.ConcurrencyMessage` and updates nothing |
+| Duplicate id on create: `"Entity with Id … already exists"` | `RelationalErrors.UniqueViolationMessage` |
+| A stale `ConcurrencyStamp` is accepted | It fails with `RelationalErrors.ConcurrencyMessage` |
 
 ## [4.0.0] - 2026-10-07
 
@@ -150,7 +171,8 @@ read-only bases), exactly as `EfRepository<T, TKey>` does.
 - In-memory `FakeRepository<T>` and `FakeScheduler`.
 - `WebApiTest<T>`, a base class for functional web API tests on an in-memory host, and `TestException`.
 
-[Unreleased]: https://github.com/artur-rios/dotnet-test-util/compare/4.0.0...HEAD
+[Unreleased]: https://github.com/artur-rios/dotnet-test-util/compare/5.0.0...HEAD
+[5.0.0]: https://github.com/artur-rios/dotnet-test-util/compare/4.0.0...5.0.0
 [4.0.0]: https://github.com/artur-rios/dotnet-test-util/compare/3.0.0...4.0.0
 [3.0.0]: https://github.com/artur-rios/dotnet-test-util/compare/v2.3.0...3.0.0
 [2.3.0]: https://github.com/artur-rios/dotnet-test-util/compare/v2.2.0...v2.3.0

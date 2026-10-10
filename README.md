@@ -102,6 +102,7 @@ Full documentation, with per-component guides, lives at
 
 ## Upgrading
 
+- From 4.x to 5.0: [Upgrading from 4.x to 5.0](https://github.com/artur-rios/dotnet-test-util/blob/main/CHANGELOG.md#upgrading-from-4x-to-50)
 - From 3.x to 4.0: [Upgrading from 3.x to 4.0](https://github.com/artur-rios/dotnet-test-util/blob/main/CHANGELOG.md#upgrading-from-3x-to-40)
 
 ## Changelog

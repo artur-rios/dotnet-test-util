@@ -95,6 +95,7 @@ public class ProductsApiTests : WebApiTest<Program>
 
 ## Upgrading
 
+- From 4.x to 5.0: [Upgrading from 4.x to 5.0](changelog/#upgrading-from-4x-to-50)
 - From 3.x to 4.0: [Upgrading from 3.x to 4.0](changelog/#upgrading-from-3x-to-40)
 
 ## Legal Details
