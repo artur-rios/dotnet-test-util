@@ -1,7 +1,7 @@
 # Test Util
 
 [![Docs](https://img.shields.io/badge/docs-website-blue)](https://artur-rios.github.io/dotnet-test-util)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/artur-rios/dotnet-test-util/blob/main/LICENSE)
+[![License: Attribution](https://img.shields.io/badge/License-Attribution-blue.svg)](https://github.com/artur-rios/dotnet-test-util/blob/main/LICENSE)
 [![NuGet](https://img.shields.io/nuget/v/ArturRios.Util.Test.svg)](https://www.nuget.org/packages/ArturRios.Util.Test)
 
 `ArturRios.Util.Test` is a small .NET library of test-support utilities for xUnit projects. It bundles the
@@ -117,4 +117,4 @@ Building from source, running the tests, the branching model and the release pro
 
 ## Legal Details
 
-This project is licensed under the [MIT License](https://en.wikipedia.org/wiki/MIT_License). A copy of the license is available at [LICENSE](https://github.com/artur-rios/dotnet-test-util/blob/main/LICENSE) in the repository.
+This project is licensed under the [Artur Rios Attribution License](https://github.com/artur-rios/dotnet-test-util/blob/main/LICENSE). It is free and open source: you may view, use, fork, modify, and extend it, provided you credit the author, Artur Rios, with a link to [artur-rios.tech](https://artur-rios.tech) or [github.com/artur-rios](https://github.com/artur-rios).

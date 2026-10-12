@@ -16,7 +16,7 @@
     <IsTestProject>false</IsTestProject>
     <Nullable>enable</Nullable>
     <PackageId>ArturRios.Util.Test</PackageId>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageProjectUrl>https://artur-rios.github.io/dotnet-test-util</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>utilities, test, .net</PackageTags>
@@ -25,6 +25,7 @@
   </PropertyGroup>
   <ItemGroup>
     <None Include="..\README.md" Pack="true" PackagePath="" />
+    <None Include="..\LICENSE" Pack="true" PackagePath="" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="ArturRios.Configuration" Version="1.2.0" />
