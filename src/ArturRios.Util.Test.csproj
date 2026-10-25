@@ -17,7 +17,7 @@
     <Nullable>enable</Nullable>
     <PackageId>ArturRios.Util.Test</PackageId>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
-    <PackageProjectUrl>https://artur-rios.github.io/dotnet-test-util</PackageProjectUrl>
+    <PackageProjectUrl>https://docs.artur-rios.tech/dotnet-test-util</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>utilities, test, .net</PackageTags>
     <RepositoryUrl>https://github.com/artur-rios/dotnet-test-util</RepositoryUrl>

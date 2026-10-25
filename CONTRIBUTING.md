@@ -1,5 +1,12 @@
 # Contributing
 
+This repository lives at <https://git.techcraftsmen.net/artur-rios/dotnet-test-util>; the GitHub repository is a read-only mirror of it, so
+clone from there and open pull requests there:
+
+```bash
+git clone https://git.techcraftsmen.net/artur-rios/dotnet-test-util.git
+```
+
 ## Prerequisites
 
 - [.NET SDK 10.0](https://dotnet.microsoft.com/download) or later
@@ -30,14 +37,18 @@ dotnet test src/ArturRios.Util.Test.sln --filter "Category=Functional"
 Unit tests exercise the assertions, attributes and fakes in isolation.
 Functional tests host the `sut/` web app in memory through `WebApiTest<Program>` and drive real HTTP
 requests against it.
-CI runs the two as separate jobs, and both must pass before a pull request can be merged.
+The `test` check runs the two one after the other, and both must pass before a pull request can be merged. It is `ci/test.sh`, which you can run on your machine
+as well.
 
-The unit job also fails when a test has no `Category` trait, since no job would run it, and when
+The check also fails when a test has no `Category` trait, since no run would include it, and when
 `dotnet format --verify-no-changes` finds a file to reformat; run `dotnet format src/ArturRios.Util.Test.sln` before pushing.
+
+The `coverage` check (`ci/coverage.sh`) runs the tests with coverage collected and makes the HTML report that the docs site
+serves at `/coverage-report/`.
 
 `Category` is the same trait the `UnitFact`, `UnitTheory`, `FunctionalFact` and `FunctionalTheory`
 attributes in this package stamp on your own tests — see
-[Assertions and attributes](https://artur-rios.github.io/dotnet-test-util/docs/assertions-and-attributes/).
+[Assertions and attributes](https://docs.artur-rios.tech/dotnet-test-util/docs/assertions-and-attributes/).
 Use those in a project that references this package; a project that does not can put
 `[Trait("Category", "Unit")]` on the class, as this repository's own tests do, and both filter the same way.
 
@@ -45,12 +56,12 @@ Use those in a project that references this package; a project that does not can
 
 `develop` is the integration branch and the base for all new work; `main` only holds released code.
 
-Branch off `develop` — `feature/<name>` for features, `fix/<name>` for fixes (`feat/`, `bugfix/`, `chore/`, `refactor/`, `docs/`, `ci/`,
-`test/`, `perf/` and `build/` are accepted too) — and open a pull request back into `develop`.
+Branch off `develop` — `feature/<name>` for features, `fix/<name>` for fixes (lowercase letters, digits, `.`, `_` and `-` in the
+name) — and open a pull request back into `develop`. Renovate's `renovate/*` dependency-update branches are accepted into
+`develop` too, and `main` only receives `release/<version>` pull requests.
 
-Dependabot's `dependabot/*` dependency-update branches are accepted into `develop` too.
-
-Pull requests into `develop` and `main` must pass the tests and the branch policy check.
+Pull requests into `develop` and `main` must pass the `test` and `coverage` checks and the branch policy check, which Jenkins runs
+(`yggdrasil.yml` and `ci/` describe them).
 
 Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/) with a lowercase subject, e.g.
 `feat: key the fake repositories by entity id type` or `fix: refresh the WebApi dependency and the auth helpers`.
@@ -74,28 +85,29 @@ relies on at run time:
   update that changes nothing for callers.
 
 The version lives in one place, `<Version>` in `src/ArturRios.Util.Test.csproj`, which `dotnet pack` uses as the package
-version. It is set by hand on the release branch (see [Releasing](#releasing)), and CI holds it to the release: the
-branch policy check requires it to match the `release/<version>` branch name, and the publish workflow requires it to
-match the tag.
+version. It is set by hand on `develop` just before a release (see [Releasing](#releasing)), and CI holds it to the release: the branch
+policy check (`ci/branch-policy.sh`) requires it to match the `release/<version>` branch name, and packing (`ci/pack.sh`)
+requires it to match the tag.
 
 ## Releasing
 
-1. Cut `release/<version>` from `develop`, set `<Version>` in `src/ArturRios.Util.Test.csproj` to that version,
-   rename `## [Unreleased]` in [CHANGELOG.md](./CHANGELOG.md) to `## [<version>] - <yyyy-mm-dd>` above a fresh, empty
-   `## [Unreleased]`, update the compare links at the bottom, and open a pull request into `main`. Only `release/*`
-   branches can be merged into `main`.
-2. Once it is merged, tag the merge commit on `main` with the version. Pushing the tag publishes the package to
-   nuget.org and GitHub Packages:
+1. A release branch is a snapshot of `develop` and carries no commits of its own, so prepare the release on `develop` first, in a
+   `feature/` or `fix/` branch merged like any other: set `<Version>` in `src/ArturRios.Util.Test.csproj` to the new version, rename
+   `## [Unreleased]` in [CHANGELOG.md](./CHANGELOG.md) to `## [<version>] - <yyyy-mm-dd>` above a fresh, empty
+   `## [Unreleased]`, and update the compare links at the bottom.
+2. Cut `release/<version>` from the updated `develop`, push it and open a pull request into `main`. Only `release/*`
+   branches can be merged into `main`, and the branch policy check rejects a branch that carries a commit `develop` does not have or whose `<Version>` in the csproj is
+   not the branch's version.
+3. Once its checks have passed, the owner merges it with a merge commit. Then tag the merge commit on `main` with the version,
+   annotated. Pushing the tag publishes the package to nuget.org:
 
    ```bash
    git switch main && git pull
-   git tag <version> && git push origin <version>
+   git tag -a <version> -m <version> && git push origin <version>
    ```
 
    Tag with the bare version, e.g. `1.3.0`. Some older releases were tagged with a `v` prefix
    (`v1.1.0`); those tags stay as they are, but new tags drop the prefix.
 
-3. Open a pull request from `main` into `develop` to bring the release back into the integration branch.
-
-Only the repository owner can push version tags, and the publish workflow rejects tags that do not point at a commit on
-`main` or whose version differs from the one in the csproj.
+Only the repository owner can push version tags. Jenkins builds the tag, which must point at a commit on `main`, packs the library
+with `ci/pack.sh` (it fails when the tag's version differs from `<Version>` in the csproj) and pushes the package to nuget.org.
