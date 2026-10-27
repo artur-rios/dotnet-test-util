@@ -6,9 +6,11 @@
 > its issues and pull requests are not followed. If you want to contribute, email me at
 > arturdev@duck.com.
 
-[![Docs](https://img.shields.io/badge/docs-website-blue)](https://artur-rios.github.io/dotnet-test-util)
+[![Docs](https://img.shields.io/badge/docs-website-blue)](https://docs.artur-rios.tech/dotnet-test-util)
 [![License: Attribution](https://img.shields.io/badge/License-Attribution-blue.svg)](https://github.com/artur-rios/dotnet-test-util/blob/main/LICENSE)
 [![NuGet](https://img.shields.io/nuget/v/ArturRios.Util.Test.svg)](https://www.nuget.org/packages/ArturRios.Util.Test)
+
+This repository lives at <https://git.techcraftsmen.net/artur-rios/dotnet-test-util>. The GitHub repository is a read-only mirror of it.
 
 `ArturRios.Util.Test` is a small .NET library of test-support utilities for xUnit projects. It bundles the
 helpers that come up again and again when testing services and web APIs: extra assertions, environment-aware
@@ -100,11 +102,11 @@ public class ProductsApiTests : WebApiTest<Program>
 ## Documentation
 
 Full documentation, with per-component guides, lives at
-[artur-rios.github.io/dotnet-test-util](https://artur-rios.github.io/dotnet-test-util/):
+[docs.artur-rios.tech/dotnet-test-util](https://docs.artur-rios.tech/dotnet-test-util/):
 
-- [Assertions & Attributes](https://artur-rios.github.io/dotnet-test-util/docs/assertions-and-attributes/)
-- [Fakes](https://artur-rios.github.io/dotnet-test-util/docs/fakes/)
-- [Web API Testing](https://artur-rios.github.io/dotnet-test-util/docs/web-api-testing/)
+- [Assertions & Attributes](https://docs.artur-rios.tech/dotnet-test-util/docs/assertions-and-attributes/)
+- [Fakes](https://docs.artur-rios.tech/dotnet-test-util/docs/fakes/)
+- [Web API Testing](https://docs.artur-rios.tech/dotnet-test-util/docs/web-api-testing/)
 
 ## Upgrading
 

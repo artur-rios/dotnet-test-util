@@ -1,4 +1,4 @@
-baseURL = 'https://artur-rios.github.io/dotnet-test-util/'
+baseURL = 'https://docs.artur-rios.tech/dotnet-test-util/'
 title = 'Dotnet Test Util'
 
 # Docsy is installed as the @docsy/theme NPM package (see package.json)
