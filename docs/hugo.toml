@@ -1,4 +1,4 @@
-baseURL = 'https://artur-rios.github.io/dotnet-test-util/'
+baseURL = 'https://docs.artur-rios.tech/dotnet-test-util/'
 title = 'Dotnet Test Util'
 
 # Docsy is installed as the @docsy/theme NPM package (see package.json)
@@ -58,7 +58,7 @@ locale = 'en-us'
       description = "ArturRios.Util.Test is a small .NET library of test-support utilities for xUnit projects. It bundles the helpers that come up again and again when testing..."
 
 [params]
-  copyright.authors = 'Artur Rios | [MIT License](https://github.com/artur-rios/dotnet-test-util/blob/main/LICENSE)'
+  copyright.authors = 'Artur Rios | [Artur Rios Attribution License](https://github.com/artur-rios/dotnet-test-util/blob/main/LICENSE)'
   privacy_policy = ''
   github_repo = 'https://github.com/artur-rios/dotnet-test-util'
   github_branch = 'main'

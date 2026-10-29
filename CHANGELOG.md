@@ -7,6 +7,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [5.0.1] - 2026-10-29
+
+### Changed
+
+- The package's project URL is the documentation site's new address, `https://docs.artur-rios.tech/dotnet-test-util`, since the
+  site moved from GitHub Pages.
+
 ## [5.0.0] - 2026-10-09
 
 ### Changed
@@ -171,7 +178,8 @@ read-only bases), exactly as `EfRepository<T, TKey>` does.
 - In-memory `FakeRepository<T>` and `FakeScheduler`.
 - `WebApiTest<T>`, a base class for functional web API tests on an in-memory host, and `TestException`.
 
-[Unreleased]: https://github.com/artur-rios/dotnet-test-util/compare/5.0.0...HEAD
+[Unreleased]: https://github.com/artur-rios/dotnet-test-util/compare/5.0.1...HEAD
+[5.0.1]: https://github.com/artur-rios/dotnet-test-util/compare/5.0.0...5.0.1
 [5.0.0]: https://github.com/artur-rios/dotnet-test-util/compare/4.0.0...5.0.0
 [4.0.0]: https://github.com/artur-rios/dotnet-test-util/compare/3.0.0...4.0.0
 [3.0.0]: https://github.com/artur-rios/dotnet-test-util/compare/v2.3.0...3.0.0

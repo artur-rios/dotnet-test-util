@@ -16,15 +16,16 @@
     <IsTestProject>false</IsTestProject>
     <Nullable>enable</Nullable>
     <PackageId>ArturRios.Util.Test</PackageId>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://artur-rios.github.io/dotnet-test-util</PackageProjectUrl>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageProjectUrl>https://docs.artur-rios.tech/dotnet-test-util</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>utilities, test, .net</PackageTags>
     <RepositoryUrl>https://github.com/artur-rios/dotnet-test-util</RepositoryUrl>
-    <Version>5.0.0</Version>
+    <Version>5.0.1</Version>
   </PropertyGroup>
   <ItemGroup>
     <None Include="..\README.md" Pack="true" PackagePath="" />
+    <None Include="..\LICENSE" Pack="true" PackagePath="" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="ArturRios.Configuration" Version="1.2.0" />
