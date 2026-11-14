@@ -7,6 +7,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- Dependencies updated: `ArturRios.Configuration` 2.0.0. The API host `WebApiTest<T>` starts resolves it too, and its
+  `ConfigurationLoader.LoadEnvironment()` no longer lets a `.env` file override environment variables the process
+  already has.
+
 ## [5.0.1] - 2026-10-29
 
 ### Changed
