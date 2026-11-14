@@ -28,7 +28,7 @@
     <None Include="..\LICENSE" Pack="true" PackagePath="" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="ArturRios.Configuration" Version="1.2.0" />
+    <PackageReference Include="ArturRios.Configuration" Version="2.0.0" />
     <PackageReference Include="ArturRios.Data.Relational.Core" Version="5.0.1" />
     <PackageReference Include="ArturRios.Mediator" Version="2.0.1" />
     <PackageReference Include="ArturRios.Util" Version="2.2.0" />
