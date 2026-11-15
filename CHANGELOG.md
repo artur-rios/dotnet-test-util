@@ -7,11 +7,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [6.0.0] - 2026-11-14
+
 ### Changed
 
-- Dependencies updated: `ArturRios.Configuration` 2.0.0. The API host `WebApiTest<T>` starts resolves it too, and its
-  `ConfigurationLoader.LoadEnvironment()` no longer lets a `.env` file override environment variables the process
-  already has.
+- **Behavior change:** `ArturRios.Configuration` updated from 1.2.0 to 2.0.0. The API host `WebApiTest<T>` starts
+  resolves it too, and its `ConfigurationLoader.LoadEnvironment()` no longer lets a `.env` file override environment
+  variables the process already has: real environment variables now win over the file.
+- `ArturRios.Data.Relational.Core` updated from 5.0.0 to 5.0.1, `ArturRios.Mediator` from 2.0.0 to 2.0.1,
+  `ArturRios.Util` from 2.1.0 to 2.2.0, `ArturRios.Util.WebApi` from 5.1.0 to 5.2.0,
+  `Microsoft.AspNetCore.Mvc.Testing` and `Microsoft.EntityFrameworkCore` from 10.0.12 to 10.0.15, and
+  `xunit.v3.assert` and `xunit.v3.extensibility.core` from 4.0.2 to 4.0.3.
 
 ## [5.0.1] - 2026-10-29
 
@@ -184,7 +190,8 @@ read-only bases), exactly as `EfRepository<T, TKey>` does.
 - In-memory `FakeRepository<T>` and `FakeScheduler`.
 - `WebApiTest<T>`, a base class for functional web API tests on an in-memory host, and `TestException`.
 
-[Unreleased]: https://github.com/artur-rios/dotnet-test-util/compare/5.0.1...HEAD
+[Unreleased]: https://github.com/artur-rios/dotnet-test-util/compare/6.0.0...HEAD
+[6.0.0]: https://github.com/artur-rios/dotnet-test-util/compare/5.0.1...6.0.0
 [5.0.1]: https://github.com/artur-rios/dotnet-test-util/compare/5.0.0...5.0.1
 [5.0.0]: https://github.com/artur-rios/dotnet-test-util/compare/4.0.0...5.0.0
 [4.0.0]: https://github.com/artur-rios/dotnet-test-util/compare/3.0.0...4.0.0
