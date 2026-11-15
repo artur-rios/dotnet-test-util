@@ -1,16 +1,8 @@
 # Test Util
 
-> [!NOTE]
-> This is the real, open-source code of dotnet-test-util. Its home is Forgejo, at
-> https://git.techcraftsmen.net/artur-rios/dotnet-test-util; the copy on GitHub is a read-only mirror, for viewing only, and
-> its issues and pull requests are not followed. If you want to contribute, email me at
-> arturdev@duck.com.
-
 [![Docs](https://img.shields.io/badge/docs-website-blue)](https://docs.artur-rios.tech/dotnet-test-util)
 [![License: Attribution](https://img.shields.io/badge/License-Attribution-blue.svg)](https://github.com/artur-rios/dotnet-test-util/blob/main/LICENSE)
 [![NuGet](https://img.shields.io/nuget/v/ArturRios.Util.Test.svg)](https://www.nuget.org/packages/ArturRios.Util.Test)
-
-This repository lives at <https://git.techcraftsmen.net/artur-rios/dotnet-test-util>. The GitHub repository is a read-only mirror of it.
 
 `ArturRios.Util.Test` is a small .NET library of test-support utilities for xUnit projects. It bundles the
 helpers that come up again and again when testing services and web APIs: extra assertions, environment-aware
@@ -122,6 +114,9 @@ Notable changes in each release are recorded in [CHANGELOG.md](https://github.co
 
 Building from source, running the tests, the branching model and the release process are described in
 [CONTRIBUTING.md](https://github.com/artur-rios/dotnet-test-util/blob/main/CONTRIBUTING.md).
+
+The GitHub repository is a read-only mirror for the real, open-source code of dotnet-test-util. Its home is Forgejo, at
+https://git.techcraftsmen.net/artur-rios/dotnet-test-util. If you want to contribute, e-mail me at arturdev@duck.com.
 
 ## Legal Details
 
