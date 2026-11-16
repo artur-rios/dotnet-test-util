@@ -1,6 +1,6 @@
 using System.Globalization;
-using System.Runtime.ExceptionServices;
 using System.Net.Http.Headers;
+using System.Runtime.ExceptionServices;
 using ArturRios.Configuration.Enums;
 using ArturRios.Output;
 using ArturRios.Util.Http;
