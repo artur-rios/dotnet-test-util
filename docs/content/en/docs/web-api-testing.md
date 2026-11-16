@@ -216,7 +216,9 @@ The last two reach into internals of `Microsoft.AspNetCore.Mvc.Testing` and `Mic
 future version changes them, the host is disposed as before and stays alive as it used to. Turn
 `IsolateExecutionContext` off only when the API must see, while it starts, an `AsyncLocal` value the test set other
 than the culture. A global limiter the API sets in `RateLimiterOptions.GlobalLimiter` is the API's own and is not
-disposed: if its partitioner holds the API's services, it still keeps them alive.
+disposed: if its partitioner holds the API's services, it still keeps them alive. A variant host built with
+`Factory.WithWebHostBuilder(...)` gets fixes 2 and 3 when the host is disposed, but starts when the test first uses
+it, in the test's own execution context.
 
 ## Resource cleanup
 

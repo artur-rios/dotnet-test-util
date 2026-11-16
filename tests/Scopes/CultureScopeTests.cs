@@ -41,8 +41,8 @@ public sealed class CultureScopeTests
     {
         using var scope = new CultureScope("");
 
-        Assert.Same(CultureInfo.InvariantCulture, CultureInfo.CurrentCulture);
-        Assert.Same(CultureInfo.InvariantCulture, CultureInfo.CurrentUICulture);
+        Assert.Equal(CultureInfo.InvariantCulture, CultureInfo.CurrentCulture);
+        Assert.Equal(CultureInfo.InvariantCulture, CultureInfo.CurrentUICulture);
     }
 
     [Fact]

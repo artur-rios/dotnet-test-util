@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using ArturRios.Configuration.Enums;
 using ArturRios.Util.Test.Functional;
+using Microsoft.AspNetCore.Hosting;
 
 namespace ArturRios.Util.Test.Tests.Functional;
 
@@ -74,6 +75,22 @@ public sealed class WebApiHostLeakTests : IDisposable
     }
 
     [Fact]
+    public async Task GivenAVariantHostOfAHost_WhenTheHostIsDisposed_ThenTheVariantCanBeCollectedToo()
+    {
+        // A variant starts when the test first uses it, in the test's context, so nothing of the test may hold it.
+        var (host, variant) = StartUseAndDispose(() =>
+        {
+            var started = new WebApiHost<Program>();
+            var other = started.Factory.WithWebHostBuilder(builder => builder.UseSetting("Sut:Greeting", "variant"));
+
+            return (started, other.Services, other.CreateClient());
+        }, holdHost: false);
+
+        Assert.True(await IsCollectedAsync(variant), "The disposed variant's services are still alive");
+        Assert.True(await IsCollectedAsync(host), "The disposed host is still alive");
+    }
+
+    [Fact]
     public async Task GivenTheHostStartsInTheCallersContext_WhenDisposed_ThenTheTimerItStartedKeepsItAlive()
     {
         // The control: with the isolation turned off, the timer's captured context holds the host, so the tests
@@ -92,10 +109,10 @@ public sealed class WebApiHostLeakTests : IDisposable
     // returning weak references only: once this returns, nothing but what the host itself started can keep it alive.
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static (WeakReference Host, WeakReference Services) StartUseAndDispose(
-        Func<(IDisposable Host, IServiceProvider Services, HttpClient Client)> start)
+        Func<(IDisposable Host, IServiceProvider Services, HttpClient Client)> start, bool holdHost = true)
     {
         var holder = new Holder();
-        Ambient.Value = holder;
+        Ambient.Value = holdHost ? holder : null;
 
         try
         {

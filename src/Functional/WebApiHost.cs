@@ -56,7 +56,8 @@ public class WebApiHost<TProgram> : IDisposable where TProgram : class
     private readonly List<object> _entryPointListeners = [];
     private readonly WebApiHostOptions _options;
     private bool _disposed;
-    private RequestDelegate? _pipeline;
+    private readonly Lock _gate = new();
+    private readonly List<RequestDelegate> _pipelines = [];
 
     /// <summary>
     /// Starts a host that runs as <see cref="EnvironmentType.Local"/>. This is the constructor xUnit uses for
@@ -256,10 +257,18 @@ public class WebApiHost<TProgram> : IDisposable where TProgram : class
     {
         if (EntryPointListener.Current() is { } listener)
         {
-            lock (_entryPointListeners)
+            lock (_gate)
             {
                 _entryPointListeners.Add(listener);
             }
+        }
+    }
+
+    private void CapturePipeline(RequestDelegate pipeline)
+    {
+        lock (_gate)
+        {
+            _pipelines.Add(pipeline);
         }
     }
 
@@ -267,13 +276,12 @@ public class WebApiHost<TProgram> : IDisposable where TProgram : class
     {
         _factory.Dispose();
 
-        if (Interlocked.Exchange(ref _pipeline, null) is { } pipeline)
+        // A variant host built with Factory.WithWebHostBuilder(...) runs this host's configuration too, so there can
+        // be several of each; the factory has disposed them all.
+        lock (_gate)
         {
-            EndpointRateLimiters.Release(pipeline);
-        }
-
-        lock (_entryPointListeners)
-        {
+            _pipelines.ForEach(EndpointRateLimiters.Release);
+            _pipelines.Clear();
             _entryPointListeners.ForEach(EntryPointListener.Release);
             _entryPointListeners.Clear();
         }
@@ -314,7 +322,7 @@ public class WebApiHost<TProgram> : IDisposable where TProgram : class
             }
 
             services.AddSingleton<IStartupFilter>(
-                new HostStartupFilter(options.LocalPort, pipeline => _pipeline = pipeline));
+                new HostStartupFilter(options.LocalPort, CapturePipeline));
 
             if (options.LoggerProviders.Count > 0)
             {
