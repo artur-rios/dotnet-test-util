@@ -308,6 +308,45 @@ public class AsyncFakeRepositoryTests
         };
     }
 
+    [Theory]
+    [MemberData(nameof(AsyncOperations))]
+    public async Task GivenACancelledToken_WhenCallingEachOperation_ThenACancelledTaskComesBackRatherThanAThrow(
+        string operation)
+    {
+        var repository = NewRepository();
+        var id = (await repository.CreateAsync(new Person { Name = "Ann" }, TestContext.Current.CancellationToken)).Data;
+        var cancelled = new CancellationToken(canceled: true);
+        var changed = new Person { Id = id, Name = "Changed" };
+
+        Task task = operation switch
+        {
+            "GetAll" => repository.GetAllAsync(cancelled),
+            "GetById" => repository.GetByIdAsync(id, cancelled),
+            "Create" => repository.CreateAsync(new Person { Name = "Bob" }, cancelled),
+            "CreateRange" => repository.CreateRangeAsync([new Person { Name = "Bob" }], cancelled),
+            "Update" => repository.UpdateAsync(changed, cancelled),
+            "UpdateRange" => repository.UpdateRangeAsync([changed], cancelled),
+            "Delete" => repository.DeleteAsync(changed, cancelled),
+            "DeleteRange" => repository.DeleteRangeAsync([id], cancelled),
+            _ => throw new ArgumentOutOfRangeException(nameof(operation), operation, null)
+        };
+
+        Assert.True(task.IsCanceled);
+        Assert.Equal("Ann", Assert.Single(repository.Query()).Name);
+    }
+
+    [Fact]
+    public async Task GivenNoMatch_WhenQueryingForTheSingleOneAsynchronously_ThenTheOperatorsOwnExceptionKeepsItsStackTrace()
+    {
+        var repository = NewRepository();
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            repository.Query().SingleAsync(TestContext.Current.CancellationToken));
+
+        // Thrown by LINQ's Single itself, not rethrown from somewhere that lost where it came from.
+        Assert.Contains("System.Linq.", exception.StackTrace);
+    }
+
     [Fact]
     public async Task GivenTheFakeQuery_WhenProjectedAndMaterialisedAsynchronously_ThenTheProjectionComesBack()
     {

@@ -7,6 +7,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- `AsyncFakeRepository.Query()` hands back the exception a query operator throws, as EF Core does. `SingleAsync` or
+  `FirstAsync` with no match threw a `TargetInvocationException` wrapping the `InvalidOperationException`, so a
+  handler that catches `InvalidOperationException` behaved differently against the fake and in production.
+- The async query operators over `AsyncFakeRepository.Query()` (`ToListAsync`, `CountAsync`, `FirstOrDefaultAsync`,
+  `await foreach`, ...) observe their cancellation token, as EF Core's do. They ran to completion with a cancelled one.
+- `AsyncFakeRepository`'s async methods return a cancelled task for a cancelled token, as `EfRepository`'s do,
+  instead of throwing `OperationCanceledException` before returning one. Code that starts the call and awaits it later
+  now sees the cancellation where it would in production.
+
 ## [6.0.0] - 2026-11-14
 
 ### Changed
