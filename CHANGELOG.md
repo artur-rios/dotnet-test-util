@@ -32,6 +32,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   exception, state and scopes of every entry logged to them, and `LogAssert`, with assertions over those entries
   (`ArturRios.Util.Test.Logging`). A `RecordingLoggerProvider` plugs into a host through
   `WebApiHostOptions.LoggerProviders`.
+- `WebApiHost<TProgram>.StartVariant(Action<IWebHostBuilder>)` (and the protected `WebApiTest<T>.StartVariant`)
+  starts a variant of a host: a host of its own, built as the host is and then as the action says, which the test
+  owns and disposes, and which is released when disposed even while the host it came from runs on.
 
 ### Fixed
 
@@ -44,6 +47,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
     thread's context, which holds the factory and the host. Disposing the host now releases what it holds;
   - ASP.NET Core's rate-limiting middleware never disposes the limiter it builds for endpoint policies, whose timer
     holds the whole application. Disposing the host now disposes that limiter.
+- A variant host made with `Factory.WithWebHostBuilder(...)` starts in an execution context of its own, as its host
+  does. It started in the test's, so a timer the API started captured the test's context and kept the variant, and
+  the host it came from, alive after both were disposed.
 - `AsyncFakeRepository.Query()` hands back the exception a query operator throws, as EF Core does. `SingleAsync` or
   `FirstAsync` with no match threw a `TargetInvocationException` wrapping the `InvalidOperationException`, so a
   handler that catches `InvalidOperationException` behaved differently against the fake and in production.

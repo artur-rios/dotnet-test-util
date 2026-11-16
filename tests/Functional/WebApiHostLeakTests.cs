@@ -11,7 +11,9 @@ namespace ArturRios.Util.Test.Tests.Functional;
 /// rest of the run. A timer captures the execution context it is started in: the test's, which reaches the test and
 /// so the host it holds, and the one WebApplicationFactory runs the entry point in, which holds the host. The rate
 /// limiter's timer also holds its middleware, and through it the whole application. A test sending a request
-/// through <c>GET /limited</c> puts both limiters to work.
+/// through <c>GET /limited</c> puts both limiters to work. Variants of a host, made with
+/// <c>Factory.WithWebHostBuilder(...)</c> or <c>StartVariant</c>, start as their host does and are released as it
+/// is.
 /// The tests stand an ambient value of their own for xUnit's test context: it is set while the host starts and holds
 /// the host, as xUnit's context reaches the test that holds it.
 /// </summary>
@@ -88,6 +90,56 @@ public sealed class WebApiHostLeakTests : IDisposable
 
         Assert.True(await IsCollectedAsync(variant), "The disposed variant's services are still alive");
         Assert.True(await IsCollectedAsync(host), "The disposed host is still alive");
+    }
+
+    [Fact]
+    public async Task GivenAVariantStartedWhileTheTestHoldsTheHost_WhenTheHostIsDisposed_ThenTheVariantCanBeCollected()
+    {
+        // The variant starts when the test first uses it, while the ambient value holds the host, so the timers it
+        // starts would keep the host, and the variant it disposes, alive if they captured the test's context.
+        var (host, variant) = StartUseAndDispose(() =>
+        {
+            var started = new WebApiHost<Program>();
+            var other = started.Factory.WithWebHostBuilder(builder => builder.UseSetting("Sut:Greeting", "variant"));
+
+            return (started, other.Services, other.CreateClient());
+        });
+
+        Assert.True(await IsCollectedAsync(variant), "The disposed variant's services are still alive");
+        Assert.True(await IsCollectedAsync(host), "The disposed host is still alive");
+    }
+
+    [Fact]
+    public async Task GivenAVariantStartedFromALiveHost_WhenTheVariantIsDisposed_ThenItCanBeCollected()
+    {
+        // A variant the test owns, disposed while the host it was made from, a shared fixture say, lives on.
+        using var host = new WebApiHost<Program>();
+
+        var (variant, services) = StartUseAndDispose(() =>
+        {
+            var started = host.StartVariant(builder => builder.UseSetting("Sut:Greeting", "variant"));
+
+            return (started, started.Services, started.Client);
+        });
+
+        Assert.True(await IsCollectedAsync(services), "The disposed variant's services are still alive");
+        Assert.True(await IsCollectedAsync(variant), "The disposed variant is still alive");
+    }
+
+    [Fact]
+    public async Task GivenAVariantStartedInTheCallersContext_WhenTheHostIsDisposed_ThenTheTimerItStartedKeepsItAlive()
+    {
+        // The control of the variant tests: with the isolation turned off, the variant starts in the test's context,
+        // as every variant made with Factory.WithWebHostBuilder(...) used to, and stays alive for the rest of the run.
+        var (_, variant) = StartUseAndDispose(() =>
+        {
+            var started = WebApiHost<Program>.Start(new WebApiHostOptions { IsolateExecutionContext = false });
+            var other = started.Factory.WithWebHostBuilder(builder => builder.UseSetting("Sut:Greeting", "variant"));
+
+            return (started, other.Services, other.CreateClient());
+        });
+
+        Assert.False(await IsCollectedAsync(variant, attempts: 3), "The variant was collected after all");
     }
 
     [Fact]

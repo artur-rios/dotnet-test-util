@@ -136,12 +136,31 @@ For what the gateway does not model, a test reaches the host itself:
 | Member | Purpose |
 |---|---|
 | `Factory` | The `WebApplicationFactory<T>` that built the host (for example `Factory.WithWebHostBuilder(...)` for a variant host, disposed with this one) |
+| `StartVariant(configure)` | Starts a variant of the host, which the test owns (see [Variant hosts](#variant-hosts)) |
 | `Server` | The in-memory `TestServer` |
 | `Services` | The host's root service provider (create a scope for scoped services) |
 | `CreateClient()`, `CreateClient(WebApplicationFactoryClientOptions)` | A new raw `HttpClient` against the host |
 
 They are `protected` on `WebApiTest<T>` and `public` on `WebApiHost<TProgram>`, which also has `Client`, the raw
 client behind its `Gateway`.
+
+### Variant hosts
+
+A test that needs the host configured a little differently, one setting or one service, starts a variant of it
+(`Host.StartVariant(...)` in a `SharedWebApiTest<TProgram>`):
+
+```csharp
+using var variant = StartVariant(builder =>
+    builder.ConfigureTestServices(services => services.AddSingleton<IEmailService>(new FailingEmailService())));
+
+var response = await variant.Gateway.PostAsync<DataOutput<string>>("/invitations", invitation);
+```
+
+The variant is a host of its own, built as the host it comes from is (its `WebApiHostOptions`, then its
+`ConfigureWebHost`) and then as `configure` says. The test owns it: disposing it releases it, whether the host it
+came from still runs or not, and disposing that host leaves the variant running. Use it rather than
+`Factory.WithWebHostBuilder(...)`, whose variant belongs to the factory: disposing it releases nothing until the host
+is disposed, so a shared host keeps every variant its tests made alive until the end of the class or collection.
 
 ## Sharing one host between tests
 
@@ -215,10 +234,11 @@ API alive for the rest of the run, so a suite's test process grew with every tes
 The last two reach into internals of `Microsoft.AspNetCore.Mvc.Testing` and `Microsoft.AspNetCore.RateLimiting`; if a
 future version changes them, the host is disposed as before and stays alive as it used to. Turn
 `IsolateExecutionContext` off only when the API must see, while it starts, an `AsyncLocal` value the test set other
-than the culture. A global limiter the API sets in `RateLimiterOptions.GlobalLimiter` is the API's own and is not
-disposed: if its partitioner holds the API's services, it still keeps them alive. A variant host built with
-`Factory.WithWebHostBuilder(...)` gets fixes 2 and 3 when the host is disposed, but starts when the test first uses
-it, in the test's own execution context.
+than the culture.
+
+A variant host gets the same: one started with `StartVariant(...)` or made with `Factory.WithWebHostBuilder(...)`
+starts in an execution context of its own when the test first uses it, as its host does, and what it holds is
+released when it is disposed (`StartVariant`) or when its host is (`Factory.WithWebHostBuilder`).
 
 ## Resource cleanup
 

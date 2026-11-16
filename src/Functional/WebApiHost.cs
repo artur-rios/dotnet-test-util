@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace ArturRios.Util.Test.Functional;
@@ -44,7 +45,8 @@ namespace ArturRios.Util.Test.Functional;
 /// <para>
 /// To configure a fixture, derive from this class, passing <see cref="WebApiHostOptions"/> to the base constructor or
 /// overriding <see cref="ConfigureWebHost"/>: <c>public sealed class ApiHost() : WebApiHost&lt;Program&gt;(options)</c>.
-/// A test that needs a host of its own starts one with <see cref="Start"/>.
+/// A test that needs a host of its own starts one with <see cref="Start"/>, and one that needs a host configured a
+/// little differently from a shared one starts a variant of it with <see cref="StartVariant"/>.
 /// </para>
 /// </remarks>
 public class WebApiHost<TProgram> : IDisposable where TProgram : class
@@ -104,7 +106,7 @@ public class WebApiHost<TProgram> : IDisposable where TProgram : class
             Environment.SetEnvironmentVariable(EnvironmentVariable, EnvironmentName);
         }
 
-        _factory = new HostFactory(Configure);
+        _factory = new HostFactory(Configure, options.IsolateExecutionContext);
 
         try
         {
@@ -136,12 +138,43 @@ public class WebApiHost<TProgram> : IDisposable where TProgram : class
     /// <exception cref="ArgumentException">The options name no environment.</exception>
     public static WebApiHost<TProgram> Start(WebApiHostOptions options) => new(options, null);
 
+    /// <summary>
+    /// Starts a variant of this host: a host of its own, built as this one is (its <see cref="WebApiHostOptions"/>,
+    /// then its <see cref="ConfigureWebHost"/>), then as <paramref name="configure"/> says. Use it rather than
+    /// <c>Factory.WithWebHostBuilder(...)</c> for a test that needs a host configured a little differently from a
+    /// shared one.
+    /// </summary>
+    /// <param name="configure">What the variant configures after this host's configuration.</param>
+    /// <returns>The started variant. The caller owns it: dispose it when the test is done.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="configure"/> is <c>null</c>.</exception>
+    /// <exception cref="ObjectDisposedException">This host has been disposed.</exception>
+    /// <remarks>
+    /// The variant starts as this host does (in an execution context of its own, unless
+    /// <see cref="WebApiHostOptions.IsolateExecutionContext"/> is off), and releases what it holds when it is
+    /// disposed, whether this host still runs or not; disposing this host leaves it running. A variant made with
+    /// <c>Factory.WithWebHostBuilder(...)</c> belongs to the factory instead: disposing it releases nothing until this
+    /// host is disposed, so a long-lived shared host keeps every such variant alive.
+    /// </remarks>
+    public WebApiHost<TProgram> StartVariant(Action<IWebHostBuilder> configure)
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        return new WebApiHost<TProgram>(_options, builder =>
+        {
+            ConfigureWebHost(builder);
+            _configureDerived?.Invoke(builder);
+            configure(builder);
+        });
+    }
+
     /// <summary>The environment name the host runs as.</summary>
     public string EnvironmentName { get; }
 
     /// <summary>
     /// The factory that built the host, for what the other members do not reach (for example
-    /// <c>Factory.WithWebHostBuilder(...)</c> for a variant host, disposed with this one).
+    /// <c>Factory.WithWebHostBuilder(...)</c> for a variant host, disposed with this one; <see cref="StartVariant"/>
+    /// starts a variant the caller owns).
     /// </summary>
     public WebApplicationFactory<TProgram> Factory => _factory;
 
@@ -363,6 +396,7 @@ public class WebApiHost<TProgram> : IDisposable where TProgram : class
         {
             CultureInfo.CurrentCulture = culture;
             CultureInfo.CurrentUICulture = uiCulture;
+            s_isolated = true;
 
             try
             {
@@ -385,9 +419,29 @@ public class WebApiHost<TProgram> : IDisposable where TProgram : class
         }
     }
 
-    private sealed class HostFactory(Action<IWebHostBuilder> configure) : WebApplicationFactory<TProgram>
+    // Whether the calling thread is one RunIsolated started, on which a host starts isolated already.
+    [ThreadStatic]
+    private static bool s_isolated;
+
+    private sealed class HostFactory(Action<IWebHostBuilder> configure, bool isolate) : WebApplicationFactory<TProgram>
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder) => configure(builder);
+
+        // Builds and starts this factory's host, and the host of every variant made with WithWebHostBuilder(...), which
+        // calls this method of the factory it was made from. A variant starts when the test first uses it, outside the
+        // constructor's RunIsolated, so it is isolated here.
+        protected override IHost CreateHost(IHostBuilder builder)
+        {
+            if (!isolate || s_isolated)
+            {
+                return base.CreateHost(builder);
+            }
+
+            IHost? host = null;
+            RunIsolated(() => host = base.CreateHost(builder));
+
+            return host!;
+        }
     }
 
     // Keeps the request pipeline, to release its rate limiters with the host, and fakes the local port when asked to.
