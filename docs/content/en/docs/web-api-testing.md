@@ -123,6 +123,7 @@ public class EmailApiTests : WebApiTest<Program>
 | `LoggerProviders` | Logger providers added to the host's logging, for example a `RecordingLoggerProvider` (see [Scopes & Logging](../scopes-and-logging/)) |
 | `LocalPort` | The local port every request appears to arrive on (`HttpContext.Connection.LocalPort`), for an API that answers per port |
 | `ClientOptions` | The options of the gateway's client and of `CreateClient()`: base address, redirects, cookies |
+| `IsolateExecutionContext` | Whether the host starts in an execution context of its own (default `true`; see [Host lifetime and memory](#host-lifetime-and-memory)) |
 
 A derived class's `ConfigureWebHost` runs while the base constructor starts the host, before the derived
 constructor's body: whatever it uses must come from a field or property initializer, or a primary-constructor
@@ -196,6 +197,26 @@ by every test that shares it:
 A test that depends on such state, or changes it in a way another test would notice, needs a host of its own: a
 `WebApiTest<T>`, or a `WebApiHost<TProgram>` it creates and disposes itself. State the API keeps outside the
 process, such as a database, is shared either way.
+
+## Host lifetime and memory
+
+Starting a host per test is only affordable when disposed hosts are collected. Three things kept every host of an
+API alive for the rest of the run, so a suite's test process grew with every test:
+
+1. A timer the API starts and never stops captures the execution context it was started in. The host used to start
+   in the test's context, and xUnit's test context reaches the test, which holds the host. The host now starts in a
+   context of its own that carries only the current culture and UI culture (`IsolateExecutionContext`).
+2. `WebApplicationFactory` runs a minimal-hosting API's entry point on a thread whose context holds the factory's
+   host-building callbacks and the built host, so a timer started on that thread captured those too. Disposing the
+   host now releases what that context holds.
+3. ASP.NET Core's rate-limiting middleware never disposes the limiter it builds for endpoint policies, and that
+   limiter's timer holds the middleware and the whole request pipeline. Disposing the host now disposes it.
+
+The last two reach into internals of `Microsoft.AspNetCore.Mvc.Testing` and `Microsoft.AspNetCore.RateLimiting`; if a
+future version changes them, the host is disposed as before and stays alive as it used to. Turn
+`IsolateExecutionContext` off only when the API must see, while it starts, an `AsyncLocal` value the test set other
+than the culture. A global limiter the API sets in `RateLimiterOptions.GlobalLimiter` is the API's own and is not
+disposed: if its partitioner holds the API's services, it still keeps them alive.
 
 ## Resource cleanup
 

@@ -88,5 +88,18 @@ public sealed class WebApiHostOptions
     /// </summary>
     public WebApplicationFactoryClientOptions ClientOptions { get; set; } = new();
 
+    /// <summary>
+    /// Whether the host is built and started in an execution context of its own, carrying only the current culture
+    /// and UI culture, rather than in the caller's. Defaults to <c>true</c>.
+    /// </summary>
+    /// <remarks>
+    /// A timer the API starts while the host starts (ASP.NET Core's rate limiter runs one it never stops) captures the
+    /// execution context it was started in. Started in the test's context, it holds on to whatever that context
+    /// reaches, xUnit's test context included, and through it the test and its disposed host, so no host is ever
+    /// collected and the test process grows with every test. Turn it off only when the API must see, while it
+    /// starts, an <see cref="AsyncLocal{T}"/> value the test set other than the culture.
+    /// </remarks>
+    public bool IsolateExecutionContext { get; set; } = true;
+
     internal static string NameOf(EnvironmentType environment) => environment.ToString().ToLowerInvariant();
 }

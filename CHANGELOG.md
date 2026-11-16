@@ -35,6 +35,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- A disposed `WebApiTest<T>` (or `WebApiHost<TProgram>`) host can be garbage-collected. Every host stayed alive
+  until the test process exited, so a suite's memory grew with every test. Three things held it:
+  - a timer the API never stops captured the test's execution context, which reaches the test and its host. The
+    host now starts in an execution context of its own, carrying only the current cultures
+    (`WebApiHostOptions.IsolateExecutionContext`, on by default);
+  - such a timer, started on the thread `WebApplicationFactory` runs the API's entry point on, also captured that
+    thread's context, which holds the factory and the host. Disposing the host now releases what it holds;
+  - ASP.NET Core's rate-limiting middleware never disposes the limiter it builds for endpoint policies, whose timer
+    holds the whole application. Disposing the host now disposes that limiter.
 - `AsyncFakeRepository.Query()` hands back the exception a query operator throws, as EF Core does. `SingleAsync` or
   `FirstAsync` with no match threw a `TargetInvocationException` wrapping the `InvalidOperationException`, so a
   handler that catches `InvalidOperationException` behaved differently against the fake and in production.

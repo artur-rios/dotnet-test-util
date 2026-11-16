@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net.Http.Headers;
 using ArturRios.Configuration.Enums;
 using ArturRios.Output;
@@ -7,6 +8,7 @@ using ArturRios.Util.Test.Logging;
 using ArturRios.Util.WebApi.Security.Records;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
@@ -51,8 +53,10 @@ public class WebApiHost<TProgram> : IDisposable where TProgram : class
     private readonly WebApplicationFactoryClientOptions _clientOptions;
     private readonly Action<IWebHostBuilder>? _configureDerived;
     private readonly HostFactory _factory;
+    private readonly List<object> _entryPointListeners = [];
     private readonly WebApiHostOptions _options;
     private bool _disposed;
+    private RequestDelegate? _pipeline;
 
     /// <summary>
     /// Starts a host that runs as <see cref="EnvironmentType.Local"/>. This is the constructor xUnit uses for
@@ -102,7 +106,14 @@ public class WebApiHost<TProgram> : IDisposable where TProgram : class
 
         try
         {
-            _ = _factory.Server;
+            if (options.IsolateExecutionContext)
+            {
+                RunIsolated(() => _ = _factory.Server);
+            }
+            else
+            {
+                _ = _factory.Server;
+            }
 
             Gateway = new HttpGateway(CreateClient());
         }
@@ -241,12 +252,40 @@ public class WebApiHost<TProgram> : IDisposable where TProgram : class
         }
     }
 
-    private void ReleaseHost() => _factory.Dispose();
+    private void CaptureEntryPointListener()
+    {
+        if (EntryPointListener.Current() is { } listener)
+        {
+            lock (_entryPointListeners)
+            {
+                _entryPointListeners.Add(listener);
+            }
+        }
+    }
+
+    private void ReleaseHost()
+    {
+        _factory.Dispose();
+
+        if (Interlocked.Exchange(ref _pipeline, null) is { } pipeline)
+        {
+            EndpointRateLimiters.Release(pipeline);
+        }
+
+        lock (_entryPointListeners)
+        {
+            _entryPointListeners.ForEach(EntryPointListener.Release);
+            _entryPointListeners.Clear();
+        }
+    }
 
     private void Configure(IWebHostBuilder builder)
     {
         var options = _options;
 
+        // Service registrations run on the API's entry-point thread, where WebApplicationFactory's listener is the
+        // ambient one; this method itself runs on the thread that starts the host.
+        builder.ConfigureServices(_ => CaptureEntryPointListener());
 
         // Told to the host directly as well as through the variable, so the host's environment does not depend on
         // whether anything else in the process has since changed it.
@@ -274,10 +313,8 @@ public class WebApiHost<TProgram> : IDisposable where TProgram : class
                 services.AddSingleton(clock);
             }
 
-            if (options.LocalPort is { } port)
-            {
-                services.AddSingleton<IStartupFilter>(new LocalPortStartupFilter(port));
-            }
+            services.AddSingleton<IStartupFilter>(
+                new HostStartupFilter(options.LocalPort, pipeline => _pipeline = pipeline));
 
             if (options.LoggerProviders.Count > 0)
             {
@@ -303,21 +340,61 @@ public class WebApiHost<TProgram> : IDisposable where TProgram : class
         _configureDerived?.Invoke(builder);
     }
 
+    // Builds and starts the host on a thread-pool thread whose execution context is a fresh one carrying only the
+    // caller's culture, so nothing the host starts (timers, hosted services, the app's own entry-point thread) can
+    // capture the test's context and keep the test, and the host with it, alive.
+    private static void RunIsolated(Action start)
+    {
+        var culture = CultureInfo.CurrentCulture;
+        var uiCulture = CultureInfo.CurrentUICulture;
+
+        void StartInContext()
+        {
+            CultureInfo.CurrentCulture = culture;
+            CultureInfo.CurrentUICulture = uiCulture;
+
+            start();
+        }
+
+        if (ExecutionContext.IsFlowSuppressed())
+        {
+            Task.Run(StartInContext).GetAwaiter().GetResult();
+
+            return;
+        }
+
+        using (ExecutionContext.SuppressFlow())
+        {
+            Task.Run(StartInContext).GetAwaiter().GetResult();
+        }
+    }
+
     private sealed class HostFactory(Action<IWebHostBuilder> configure) : WebApplicationFactory<TProgram>
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder) => configure(builder);
     }
 
-    private sealed class LocalPortStartupFilter(int port) : IStartupFilter
+    // Keeps the request pipeline, to release its rate limiters with the host, and fakes the local port when asked to.
+    private sealed class HostStartupFilter(int? port, Action<RequestDelegate> capture) : IStartupFilter
     {
         public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) => app =>
         {
-            app.Use((context, nextMiddleware) =>
+            app.Use(pipeline =>
             {
-                context.Connection.LocalPort = port;
+                capture(pipeline);
 
-                return nextMiddleware(context);
+                return pipeline;
             });
+
+            if (port is { } localPort)
+            {
+                app.Use((context, nextMiddleware) =>
+                {
+                    context.Connection.LocalPort = localPort;
+
+                    return nextMiddleware(context);
+                });
+            }
 
             next(app);
         };

@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Threading.RateLimiting;
 using ArturRios.Output;
+using ArturRios.Util.Test.Sut;
 using ArturRios.Util.WebApi.Security.Records;
 using Microsoft.AspNetCore.RateLimiting;
 
@@ -11,6 +12,7 @@ var startupUiCulture = CultureInfo.CurrentUICulture.Name;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<Heartbeat>();
 
 // A configuration value read while the app is set up, before the host is built.
 var startupGreeting = builder.Configuration["Sut:Greeting"] ?? string.Empty;
@@ -18,7 +20,8 @@ var startupGreeting = builder.Configuration["Sut:Greeting"] ?? string.Empty;
 const string limitedPolicy = "limited";
 
 // ASP.NET Core's rate limiter, as the APIs this library tests use it: a fixed window of one request a minute on
-// GET /limited. Its budget lives as long as the host, so tests sharing a host share it.
+// GET /limited. Its budget lives as long as the host, so tests sharing a host share it, and its timer, which it never
+// stops, is what kept every disposed host alive.
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -32,6 +35,9 @@ builder.Services.AddRateLimiter(options =>
 });
 
 var app = builder.Build();
+
+// Started with the host and never stopped, like the rate limiter's own timer.
+app.Services.GetRequiredService<Heartbeat>();
 
 app.UseRateLimiter();
 

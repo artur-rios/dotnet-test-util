@@ -36,7 +36,9 @@ dotnet test src/ArturRios.Util.Test.sln --filter "Category=Functional"
 
 Unit tests exercise the assertions, attributes and fakes in isolation.
 Functional tests host the `sut/` web app in memory through `WebApiTest<Program>` and `WebApiHost<Program>` and drive
-real HTTP requests against it.
+real HTTP requests against it. The app runs ASP.NET Core's rate limiter and a service with a timer it never stops, as
+the APIs this library tests do, so the host-leak tests (`WebApiHostLeakTests`) can show that a disposed host is still
+collected.
 The suite runs in parallel, except for the test classes that set the process-wide `ASPNETCORE_ENVIRONMENT`
 variable (the attribute tests and every `WebApiTest<Program>` or `WebApiHost<Program>` host): they share the
 `EnvironmentVariableCollection` and run one at a time. A new test class that sets or reads the variable joins that
