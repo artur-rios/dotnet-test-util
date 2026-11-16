@@ -245,4 +245,54 @@ public sealed class RepositoryParityTests : IDisposable
             Assert.True(repository.Query().Any(a => a.Id == id), name);
         }
     }
+
+    [Fact]
+    public async Task GivenARangeWithOneStaleConcurrencyStamp_WhenUpdating_ThenBothFailAndUpdateNothing()
+    {
+        foreach (var (name, repository) in AsyncRepositories<Account>())
+        {
+            var firstId = (await repository.CreateAsync(new Account { Owner = "Ann" }, TestContext.Current.CancellationToken)).Data;
+            var secondId = (await repository.CreateAsync(new Account { Owner = "Bob" }, TestContext.Current.CancellationToken)).Data;
+            var firstStamp = repository.Query().AsNoTracking().Single(a => a.Id == firstId).ConcurrencyStamp;
+
+            var result = await repository.UpdateRangeAsync([
+                new Account { Id = firstId, Owner = "Ann Smith", ConcurrencyStamp = firstStamp },
+                new Account { Id = secondId, Owner = "Mallory" }
+            ], TestContext.Current.CancellationToken);
+
+            AssertFailedWith(name, RelationalErrors.ConcurrencyMessage, result);
+            Assert.Equal("Ann", repository.Query().AsNoTracking().Single(a => a.Id == firstId).Owner);
+            Assert.Equal(firstStamp, repository.Query().AsNoTracking().Single(a => a.Id == firstId).ConcurrencyStamp);
+        }
+    }
+
+    [Fact]
+    public void GivenTheCurrentConcurrencyStamp_WhenDeleting_ThenBothRemoveTheEntity()
+    {
+        foreach (var (name, repository) in Repositories<Account>())
+        {
+            var id = repository.Create(new Account { Owner = "Ann" }).Data;
+            var stamp = repository.Query().AsNoTracking().Single(a => a.Id == id).ConcurrencyStamp;
+
+            var result = repository.Delete(new Account { Id = id, ConcurrencyStamp = stamp });
+
+            Assert.True(result.Success, name);
+            Assert.False(repository.Query().Any(a => a.Id == id), name);
+        }
+    }
+
+    [Fact]
+    public void GivenARangeOfIdsWithAnUnknownOne_WhenDeleting_ThenBothReportOnlyTheIdsTheyRemoved()
+    {
+        foreach (var (name, repository) in Repositories<Person>())
+        {
+            var ids = repository.CreateRange([new Person { Name = "Ann" }, new Person { Name = "Bob" }]).Data!.ToList();
+
+            var result = repository.DeleteRange([ids[0], 999]);
+
+            Assert.True(result.Success, name);
+            Assert.Equal([ids[0]], result.Data);
+            Assert.Equal(ids[1], Assert.Single(repository.Query().AsNoTracking()).Id);
+        }
+    }
 }

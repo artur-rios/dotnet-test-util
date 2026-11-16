@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using ArturRios.Mediator;
 using ArturRios.Mediator.Command.Interfaces;
 using ArturRios.Mediator.Query.Interfaces;
@@ -53,15 +54,67 @@ public class FakeSchedulerTests
     }
 
     [Fact]
-    public async Task GivenAConfiguredDelay_WhenTheScheduleRuns_ThenItWaitsForThatDelay()
+    public async Task GivenAConfiguredDelay_WhenTheScheduleStarts_ThenNothingIsDispatchedUntilTheDelayHasElapsed()
     {
-        var mediator = BuildMediator(out _, out _);
+        // One second is the smallest delay the scheduler takes: it has no clock to fake.
+        var mediator = BuildMediator(out var commandHandler, out _);
         var scheduler = new FakeScheduler(mediator, waitTimeInSeconds: 1);
+        var stopwatch = Stopwatch.StartNew();
 
-        var start = DateTime.UtcNow;
-        await scheduler.CreateCommandSchedule<PingCommand, PingCommandOutput>(new PingCommand { Value = "x" });
-        var elapsed = DateTime.UtcNow - start;
+        var schedule = scheduler.CreateCommandSchedule<PingCommand, PingCommandOutput>(new PingCommand { Value = "x" });
 
-        Assert.True(elapsed >= TimeSpan.FromMilliseconds(900), $"Elapsed was {elapsed}");
+        Assert.False(schedule.IsCompleted);
+        Assert.False(commandHandler.WasCalled);
+
+        await schedule;
+
+        Assert.True(commandHandler.WasCalled);
+        Assert.True(stopwatch.Elapsed >= TimeSpan.FromMilliseconds(900), $"Elapsed was {stopwatch.Elapsed}");
+    }
+
+    [Fact]
+    public async Task GivenANegativeDelay_WhenACommandScheduleRuns_ThenItThrowsAndDispatchesNothing()
+    {
+        var mediator = BuildMediator(out var commandHandler, out _);
+        var scheduler = new FakeScheduler(mediator, waitTimeInSeconds: -1);
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => scheduler.CreateCommandSchedule<PingCommand, PingCommandOutput>(new PingCommand()));
+
+        Assert.False(commandHandler.WasCalled);
+    }
+
+    [Fact]
+    public async Task GivenANegativeDelay_WhenAQueryScheduleRuns_ThenItThrowsAndDispatchesNothing()
+    {
+        var mediator = BuildMediator(out _, out var queryHandler);
+        var scheduler = new FakeScheduler(mediator, waitTimeInSeconds: -1);
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => scheduler.CreateQuerySchedule<PingQuery, PingQueryOutput>(new PingQuery()));
+
+        Assert.False(queryHandler.WasCalled);
+    }
+
+    [Fact]
+    public async Task GivenNoHandlerForTheCommand_WhenTheScheduleRuns_ThenTheMediatorsErrorReachesTheCaller()
+    {
+        var mediator = new CommandQueryMediator(new ServiceCollection().BuildServiceProvider()
+            .GetRequiredService<IServiceScopeFactory>());
+        var scheduler = new FakeScheduler(mediator, waitTimeInSeconds: 0);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => scheduler.CreateCommandSchedule<PingCommand, PingCommandOutput>(new PingCommand()));
+    }
+
+    [Fact]
+    public async Task GivenNoHandlerForTheQuery_WhenTheScheduleRuns_ThenTheMediatorsErrorReachesTheCaller()
+    {
+        var mediator = new CommandQueryMediator(new ServiceCollection().BuildServiceProvider()
+            .GetRequiredService<IServiceScopeFactory>());
+        var scheduler = new FakeScheduler(mediator, waitTimeInSeconds: 0);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => scheduler.CreateQuerySchedule<PingQuery, PingQueryOutput>(new PingQuery()));
     }
 }

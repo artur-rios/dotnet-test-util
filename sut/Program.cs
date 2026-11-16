@@ -27,6 +27,34 @@ app.MapPost("/auth", (Credentials credentials) =>
     return Results.Ok(DataOutput<Authentication>.New.WithError("Invalid credentials"));
 });
 
+// POST /auth/{variant} — answers a valid credential the ways an authentication route can fail to issue a usable
+// token, so the tests can cover each case AuthenticateAsync rejects.
+app.MapPost("/auth/{variant}", (string variant) =>
+{
+    var authentication = new Authentication(
+        issuedToken,
+        true,
+        DateTime.UtcNow.ToString("o"),
+        DateTime.UtcNow.AddHours(1).ToString("o"));
+
+    return variant switch
+    {
+        // A usable payload, but an error status.
+        "server-error" => Results.Json(DataOutput<Authentication>.New.WithData(authentication), statusCode: 500),
+        // A success status whose body is not the expected JSON.
+        "not-json" => Results.Text("not json"),
+        // A successful output that carries no authentication.
+        "no-data" => Results.Ok(DataOutput<Authentication>.New),
+        // An authentication without a token.
+        "null-token" => Results.Ok(DataOutput<Authentication>.New.WithData(authentication with { Token = null })),
+        "empty-token" => Results.Ok(DataOutput<Authentication>.New.WithData(authentication with { Token = "" })),
+        _ => Results.NotFound()
+    };
+});
+
+// GET /environment — the environment the host runs as.
+app.MapGet("/environment", (IWebHostEnvironment environment) => Results.Ok(environment.EnvironmentName));
+
 // GET /secure — succeeds only when the issued bearer token is present.
 app.MapGet("/secure", (HttpContext context) =>
 {

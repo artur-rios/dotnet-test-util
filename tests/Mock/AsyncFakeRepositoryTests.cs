@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using ArturRios.Data.Relational.Core.Repositories;
 using ArturRios.Util.Test.Mock;
 using Microsoft.EntityFrameworkCore;
@@ -273,5 +274,158 @@ public class AsyncFakeRepositoryTests
         await repository.CreateAsync(new Person { Name = "Bob" }, TestContext.Current.CancellationToken);
 
         Assert.Single(all);
+    }
+
+    public static TheoryData<string> AsyncOperations =>
+        ["GetAll", "GetById", "Create", "CreateRange", "Update", "UpdateRange", "Delete", "DeleteRange"];
+
+    [Theory]
+    [MemberData(nameof(AsyncOperations))]
+    public async Task GivenACancelledToken_WhenRunningEachOperation_ThenCancellationIsThrownAndTheStoreIsUnchanged(
+        string operation)
+    {
+        var repository = NewRepository();
+        var id = (await repository.CreateAsync(new Person { Name = "Ann" }, TestContext.Current.CancellationToken)).Data;
+        var cancelled = new CancellationToken(canceled: true);
+        var changed = new Person { Id = id, Name = "Changed" };
+
+        var exception = await Record.ExceptionAsync(Run);
+
+        Assert.IsAssignableFrom<OperationCanceledException>(exception);
+        Assert.Equal("Ann", Assert.Single(repository.Query()).Name);
+
+        Task Run() => operation switch
+        {
+            "GetAll" => repository.GetAllAsync(cancelled),
+            "GetById" => repository.GetByIdAsync(id, cancelled),
+            "Create" => repository.CreateAsync(new Person { Name = "Bob" }, cancelled),
+            "CreateRange" => repository.CreateRangeAsync([new Person { Name = "Bob" }], cancelled),
+            "Update" => repository.UpdateAsync(changed, cancelled),
+            "UpdateRange" => repository.UpdateRangeAsync([changed], cancelled),
+            "Delete" => repository.DeleteAsync(changed, cancelled),
+            "DeleteRange" => repository.DeleteRangeAsync([id], cancelled),
+            _ => throw new ArgumentOutOfRangeException(nameof(operation), operation, null)
+        };
+    }
+
+    [Fact]
+    public async Task GivenTheFakeQuery_WhenProjectedAndMaterialisedAsynchronously_ThenTheProjectionComesBack()
+    {
+        var repository = NewRepository();
+        await repository.CreateRangeAsync([new Person { Name = "Ann", Age = 30 }, new Person { Name = "Bob", Age = 25 }],
+            TestContext.Current.CancellationToken);
+
+        var names = await repository.Query().OrderBy(p => p.Age).Select(p => p.Name)
+            .ToListAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(["Bob", "Ann"], names);
+    }
+
+    [Fact]
+    public async Task GivenTheFakeQuery_WhenScalarAsyncOperatorsRun_ThenTheyAnswerOverTheStoredEntities()
+    {
+        var repository = NewRepository();
+        await repository.CreateRangeAsync([new Person { Name = "Ann", Age = 30 }, new Person { Name = "Bob", Age = 25 }],
+            TestContext.Current.CancellationToken);
+        var query = repository.Query();
+
+        Assert.True(await query.AnyAsync(p => p.Name == "Bob", TestContext.Current.CancellationToken));
+        Assert.False(await query.AnyAsync(p => p.Age > 40, TestContext.Current.CancellationToken));
+        Assert.Equal(55, await query.SumAsync(p => p.Age, TestContext.Current.CancellationToken));
+        Assert.Equal(30, await query.MaxAsync(p => p.Age, TestContext.Current.CancellationToken));
+        Assert.Equal("Ann", (await query.SingleAsync(p => p.Age == 30, TestContext.Current.CancellationToken)).Name);
+    }
+
+    [Fact]
+    public async Task GivenTheFakeQuery_WhenEnumeratedWithAwaitForeach_ThenEveryEntityComesBackInInsertionOrder()
+    {
+        var repository = NewRepository();
+        await repository.CreateRangeAsync([new Person { Name = "Ann" }, new Person { Name = "Bob" }],
+            TestContext.Current.CancellationToken);
+        var names = new List<string>();
+
+        await foreach (var person in repository.Query().AsAsyncEnumerable()
+                           .WithCancellation(TestContext.Current.CancellationToken))
+        {
+            names.Add(person.Name);
+        }
+
+        Assert.Equal(["Ann", "Bob"], names);
+    }
+
+    [Fact]
+    public async Task GivenTheFakeQuery_WhenEntitiesAreCreatedAfterItWasTaken_ThenItSeesThem()
+    {
+        var repository = NewRepository();
+        var query = repository.Query();
+
+        await repository.CreateAsync(new Person { Name = "Ann" }, TestContext.Current.CancellationToken);
+
+        Assert.Equal(1, await query.CountAsync(TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task GivenAVersionedEntityWithAStaleStamp_WhenDeletingAsynchronously_ThenAConcurrencyConflictComesBack()
+    {
+        var repository = new AsyncFakeRepository<Account, long>();
+        var id = (await repository.CreateAsync(new Account { Owner = "Ann" }, TestContext.Current.CancellationToken)).Data;
+        var stamp = (await repository.GetByIdAsync(id, TestContext.Current.CancellationToken)).Data!.ConcurrencyStamp;
+
+        var stale = await repository.DeleteAsync(new Account { Id = id }, TestContext.Current.CancellationToken);
+        var current = await repository.DeleteAsync(new Account { Id = id, ConcurrencyStamp = stamp },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal([RelationalErrors.ConcurrencyMessage], stale.Errors);
+        Assert.True(current.Success);
+        Assert.Empty(repository.Query());
+    }
+
+    [Fact]
+    public async Task GivenARangeWithOneStaleStamp_WhenUpdatingAsynchronously_ThenItFailsAndNothingIsUpdated()
+    {
+        var repository = new AsyncFakeRepository<Account, long>();
+        var firstId = (await repository.CreateAsync(new Account { Owner = "Ann" }, TestContext.Current.CancellationToken)).Data;
+        var secondId = (await repository.CreateAsync(new Account { Owner = "Bob" }, TestContext.Current.CancellationToken)).Data;
+        var firstStamp = (await repository.GetByIdAsync(firstId, TestContext.Current.CancellationToken)).Data!.ConcurrencyStamp;
+
+        var result = await repository.UpdateRangeAsync([
+            new Account { Id = firstId, Owner = "Ann Smith", ConcurrencyStamp = firstStamp },
+            new Account { Id = secondId, Owner = "Mallory" }
+        ], TestContext.Current.CancellationToken);
+
+        Assert.Equal([RelationalErrors.ConcurrencyMessage], result.Errors);
+        Assert.Equal(["Ann", "Bob"], repository.Query().Select(a => a.Owner));
+    }
+
+    [Fact]
+    public async Task GivenEmptyRanges_WhenRunningTheRangeOperationsAsynchronously_ThenEachSucceedsWithNoData()
+    {
+        var repository = NewRepository();
+
+        var created = await repository.CreateRangeAsync([], TestContext.Current.CancellationToken);
+        var updated = await repository.UpdateRangeAsync([], TestContext.Current.CancellationToken);
+        var deleted = await repository.DeleteRangeAsync([], TestContext.Current.CancellationToken);
+
+        Assert.Empty(created.Data!);
+        Assert.Empty(updated.Data!);
+        Assert.Empty(deleted.Data!);
+        Assert.Empty(repository.Query());
+    }
+
+    [Fact]
+    public async Task GivenTheFakeQuerysProvider_WhenUsedThroughItsNonGenericMembers_ThenItAnswersAsTheGenericOnes()
+    {
+        var repository = NewRepository();
+        await repository.CreateRangeAsync([new Person { Name = "Ann" }, new Person { Name = "Bob" }],
+            TestContext.Current.CancellationToken);
+        IQueryable query = repository.Query();
+
+        var count = query.Provider.Execute(
+            Expression.Call(typeof(Queryable), nameof(Queryable.Count), [typeof(Person)], query.Expression));
+        var requery = query.Provider.CreateQuery(query.Expression);
+
+        Assert.Equal(2, count);
+        Assert.Equal(["Ann", "Bob"], requery.Cast<Person>().Select(p => p.Name));
+        Assert.IsAssignableFrom<IAsyncEnumerable<Person>>(requery);
     }
 }

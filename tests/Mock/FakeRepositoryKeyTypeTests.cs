@@ -81,6 +81,9 @@ public class FakeRepositoryKeyTypeTests
         var result = repository.Create(new Country { Name = "Nowhere" });
 
         Assert.False(result.Success);
+        Assert.Equal(
+            ["Entity Id must be assigned before it is created: there is no default id generator for String keys"],
+            result.Errors);
         Assert.Empty(repository.Query());
     }
 
@@ -164,5 +167,73 @@ public class FakeRepositoryKeyTypeTests
 
         Assert.False(result.Success);
         Assert.Single(repository.Query());
+    }
+
+    [Fact]
+    public void GivenARangeWithAnIdAlreadyStored_WhenCreatingIt_ThenAUniqueViolationComesBackAndNothingNewIsStored()
+    {
+        var repository = new FakeRepository<Country, string>();
+        repository.Create(new Country { Id = "BR", Name = "Brazil" });
+
+        var result = repository.CreateRange([
+            new Country { Id = "PT", Name = "Portugal" },
+            new Country { Id = "BR", Name = "Duplicate" }
+        ]);
+
+        Assert.Equal([RelationalErrors.UniqueViolationMessage], result.Errors);
+        Assert.Equal("BR", Assert.Single(repository.Query()).Id);
+    }
+
+    [Fact]
+    public void GivenARangeWithAnEntityWithoutAnId_WhenCreatingIt_ThenAFailedOutputComesBackAndNothingIsStored()
+    {
+        var repository = new FakeRepository<Country, string>();
+
+        var result = repository.CreateRange([
+            new Country { Id = "BR", Name = "Brazil" },
+            new Country { Name = "Nowhere" }
+        ]);
+
+        Assert.False(result.Success);
+        Assert.Empty(repository.Query());
+    }
+
+    [Fact]
+    public void GivenAStringKeyedEntityWithAnEmptyId_WhenCreating_ThenTheEmptyIdIsAccepted()
+    {
+        // Only the key type's default (null for strings) counts as unset: an empty string is an id.
+        var repository = new FakeRepository<Country, string>();
+
+        var result = repository.Create(new Country { Id = "", Name = "Blank" });
+
+        Assert.True(result.Success);
+        Assert.Equal("Blank", repository.GetById("").Data!.Name);
+    }
+
+    [Fact]
+    public void GivenTwoFakes_WhenEachCreatesEntities_ThenEachCountsItsIdsFromOne()
+    {
+        var first = new FakeRepository<Person, long>();
+        var second = new FakeRepository<Person, long>();
+
+        first.Create(new Person { Name = "Ann" });
+        var result = second.Create(new Person { Name = "Bob" });
+
+        Assert.Equal(1L, result.Data);
+    }
+
+    [Fact]
+    public void GivenAValueTypeKeyWithNoDefaultGenerator_WhenCreatingWithTheIdUnset_ThenAFailedOutputComesBack()
+    {
+        var repository = new FakeRepository<Seat, short>();
+
+        var unset = repository.Create(new Seat { Row = "A" });
+        var assigned = repository.Create(new Seat { Id = 7, Row = "B" });
+
+        Assert.Equal(
+            ["Entity Id must be assigned before it is created: there is no default id generator for Int16 keys"],
+            unset.Errors);
+        Assert.Equal((short)7, assigned.Data);
+        Assert.Equal("B", Assert.Single(repository.Query()).Row);
     }
 }

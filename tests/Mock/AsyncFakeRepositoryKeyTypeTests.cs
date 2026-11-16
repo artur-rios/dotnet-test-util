@@ -1,3 +1,4 @@
+using ArturRios.Data.Relational.Core.Repositories;
 using ArturRios.Util.Test.Mock;
 using Microsoft.EntityFrameworkCore;
 
@@ -103,6 +104,33 @@ public class AsyncFakeRepositoryKeyTypeTests
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
             () => repository.CreateAsync(new Country { Id = "BR", Name = "Brazil" }, cancelled));
+        Assert.Empty(repository.Query());
+    }
+
+    [Fact]
+    public async Task GivenAStoredStringKey_WhenCreatingAnotherEntityWithTheSameIdAsynchronously_ThenAUniqueViolationComesBack()
+    {
+        var repository = new AsyncFakeRepository<Country, string>();
+        await repository.CreateAsync(new Country { Id = "BR", Name = "Brazil" }, TestContext.Current.CancellationToken);
+
+        var result = await repository.CreateAsync(new Country { Id = "BR", Name = "Duplicate" },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal([RelationalErrors.UniqueViolationMessage], result.Errors);
+        Assert.Equal("Brazil", Assert.Single(repository.Query()).Name);
+    }
+
+    [Fact]
+    public async Task GivenARangeWithARepeatedStringKey_WhenCreatingItAsynchronously_ThenAFailedOutputComesBackAndNothingIsStored()
+    {
+        var repository = new AsyncFakeRepository<Country, string>();
+
+        var result = await repository.CreateRangeAsync([
+            new Country { Id = "BR", Name = "Brazil" },
+            new Country { Id = "BR", Name = "Duplicate" }
+        ], TestContext.Current.CancellationToken);
+
+        Assert.Equal([RelationalErrors.UniqueViolationMessage], result.Errors);
         Assert.Empty(repository.Query());
     }
 }
