@@ -309,6 +309,18 @@ public class AsyncFakeRepositoryTests
     }
 
     [Fact]
+    public async Task GivenNoMatch_WhenQueryingForTheSingleOneAsynchronously_ThenTheOperatorsOwnExceptionKeepsItsStackTrace()
+    {
+        var repository = NewRepository();
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            repository.Query().SingleAsync(TestContext.Current.CancellationToken));
+
+        // Thrown by LINQ's Single itself, not rethrown from somewhere that lost where it came from.
+        Assert.Contains("System.Linq.", exception.StackTrace);
+    }
+
+    [Fact]
     public async Task GivenTheFakeQuery_WhenProjectedAndMaterialisedAsynchronously_ThenTheProjectionComesBack()
     {
         var repository = NewRepository();

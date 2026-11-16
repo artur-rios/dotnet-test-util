@@ -132,6 +132,51 @@ public sealed class RepositoryParityTests : IDisposable
     }
 
     [Fact]
+    public async Task GivenNoMatchingEntity_WhenQueryingForTheSingleOrFirstOneAsynchronously_ThenBothThrowInvalidOperationException()
+    {
+        // Exactly InvalidOperationException, as EF Core throws it: a handler that catches it must behave the same
+        // against the fake.
+        foreach (var (name, repository) in AsyncRepositories<Person>())
+        {
+            await repository.CreateAsync(new Person { Name = "Ann" }, TestContext.Current.CancellationToken);
+
+            var single = await Record.ExceptionAsync(() =>
+                repository.Query().SingleAsync(p => p.Name == "Nobody", TestContext.Current.CancellationToken));
+            var first = await Record.ExceptionAsync(() =>
+                repository.Query().FirstAsync(p => p.Name == "Nobody", TestContext.Current.CancellationToken));
+
+            Assert.True(single?.GetType() == typeof(InvalidOperationException), $"{name}: {single}");
+            Assert.True(first?.GetType() == typeof(InvalidOperationException), $"{name}: {first}");
+        }
+    }
+
+    [Fact]
+    public async Task GivenACancelledToken_WhenRunningAnAsyncQueryOperator_ThenBothCancel()
+    {
+        var cancelled = new CancellationToken(canceled: true);
+
+        foreach (var (name, repository) in AsyncRepositories<Person>())
+        {
+            await repository.CreateAsync(new Person { Name = "Ann" }, TestContext.Current.CancellationToken);
+
+            var exceptions = new[]
+            {
+                await Record.ExceptionAsync(() => repository.Query().ToListAsync(cancelled)),
+                await Record.ExceptionAsync(() => repository.Query().CountAsync(cancelled)),
+                await Record.ExceptionAsync(() => repository.Query().FirstOrDefaultAsync(p => p.Name == "Ann", cancelled)),
+                await Record.ExceptionAsync(async () =>
+                {
+                    await foreach (var _ in repository.Query().AsAsyncEnumerable().WithCancellation(cancelled))
+                    {
+                    }
+                })
+            };
+
+            Assert.All(exceptions, exception => Assert.True(exception is OperationCanceledException, $"{name}: {exception}"));
+        }
+    }
+
+    [Fact]
     public void GivenAFetchedList_WhenEntitiesAreCreatedAfterwards_ThenTheListIsASnapshot()
     {
         foreach (var (name, repository) in Repositories<Person>())
