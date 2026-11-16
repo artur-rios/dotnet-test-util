@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Runtime.ExceptionServices;
 using System.Net.Http.Headers;
 using ArturRios.Configuration.Enums;
 using ArturRios.Output;
@@ -348,33 +349,35 @@ public class WebApiHost<TProgram> : IDisposable where TProgram : class
         _configureDerived?.Invoke(builder);
     }
 
-    // Builds and starts the host on a thread-pool thread whose execution context is a fresh one carrying only the
-    // caller's culture, so nothing the host starts (timers, hosted services, the app's own entry-point thread) can
-    // capture the test's context and keep the test, and the host with it, alive.
+    // Builds and starts the host on a thread of its own, started without the caller's execution context, that carries
+    // only the caller's culture: nothing the host starts (timers, hosted services, the API's entry-point thread) can
+    // capture the test's context and keep the test, and the host with it, alive. A thread rather than a task: a task
+    // waited on before it starts can run inline on the waiting thread, in the caller's context.
     private static void RunIsolated(Action start)
     {
         var culture = CultureInfo.CurrentCulture;
         var uiCulture = CultureInfo.CurrentUICulture;
+        ExceptionDispatchInfo? failure = null;
 
-        void StartInContext()
+        var thread = new Thread(() =>
         {
             CultureInfo.CurrentCulture = culture;
             CultureInfo.CurrentUICulture = uiCulture;
 
-            start();
-        }
+            try
+            {
+                start();
+            }
+            catch (Exception exception)
+            {
+                failure = ExceptionDispatchInfo.Capture(exception);
+            }
+        }) { IsBackground = true, Name = "WebApiHost start" };
 
-        if (ExecutionContext.IsFlowSuppressed())
-        {
-            Task.Run(StartInContext).GetAwaiter().GetResult();
+        thread.UnsafeStart();
+        thread.Join();
 
-            return;
-        }
-
-        using (ExecutionContext.SuppressFlow())
-        {
-            Task.Run(StartInContext).GetAwaiter().GetResult();
-        }
+        failure?.Throw();
     }
 
     private sealed class HostFactory(Action<IWebHostBuilder> configure) : WebApplicationFactory<TProgram>

@@ -89,8 +89,8 @@ public sealed class WebApiHostOptions
     public WebApplicationFactoryClientOptions ClientOptions { get; set; } = new();
 
     /// <summary>
-    /// Whether the host is built and started in an execution context of its own, carrying only the current culture
-    /// and UI culture, rather than in the caller's. Defaults to <c>true</c>.
+    /// Whether the host is built and started on a thread of its own, in an execution context that carries only the
+    /// current culture and UI culture, rather than in the caller's. Defaults to <c>true</c>.
     /// </summary>
     /// <remarks>
     /// A timer the API starts while the host starts (ASP.NET Core's rate limiter runs one it never stops) captures the
