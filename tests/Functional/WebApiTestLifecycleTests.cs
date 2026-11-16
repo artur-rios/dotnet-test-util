@@ -61,6 +61,8 @@ public sealed class WebApiTestLifecycleTests : IDisposable
 
         public HttpClient NewClient(WebApplicationFactoryClientOptions options) => CreateClient(options);
 
+        public WebApiHost<Program> NewVariant(Action<IWebHostBuilder> configure) => StartVariant(configure);
+
         // A property initializer runs before the base constructor starts the host.
         protected override void ConfigureWebHost(IWebHostBuilder builder) => builder.UseSetting("Sut:Greeting", Greeting);
     }
@@ -74,6 +76,25 @@ public sealed class WebApiTestLifecycleTests : IDisposable
 
         Assert.Equal("Testing", Environment.GetEnvironmentVariable(Variable));
         Assert.Equal("Testing", response.Body);
+    }
+
+    [Fact]
+    public async Task GivenAStartedHost_WhenADerivedTestStartsAVariant_ThenItRunsTheTestsConfigurationThenItsOwn()
+    {
+        using var host = new ConfiguredHost("Testing");
+
+        using var variant = host.NewVariant(_ => { });
+        using var overridden = host.NewVariant(builder => builder.UseSetting("Sut:Greeting", "from the variant"));
+
+        var environment = await variant.Gateway.GetAsync<string>("/environment", TestContext.Current.CancellationToken);
+        var greeting = await variant.Gateway.GetAsync<string>("/configuration/startup",
+            TestContext.Current.CancellationToken);
+        var overriddenGreeting = await overridden.Gateway.GetAsync<string>("/configuration/startup",
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal("Testing", environment.Body);
+        Assert.Equal("from the override", greeting.Body);
+        Assert.Equal("from the variant", overriddenGreeting.Body);
     }
 
     [Fact]

@@ -124,6 +124,7 @@ public class EmailApiTests : WebApiTest<Program>
 | `LocalPort` | The local port every request appears to arrive on (`HttpContext.Connection.LocalPort`), for an API that answers per port |
 | `ClientOptions` | The options of the gateway's client and of `CreateClient()`: base address, redirects, cookies |
 | `IsolateExecutionContext` | Whether the host starts in an execution context of its own (default `true`; see [Host lifetime and memory](#host-lifetime-and-memory)) |
+| `DisposeGlobalRateLimiter` | Whether disposing the host disposes the API's global rate limiter too (default `false`; see [Host lifetime and memory](#host-lifetime-and-memory)) |
 
 A derived class's `ConfigureWebHost` runs while the base constructor starts the host, before the derived
 constructor's body: whatever it uses must come from a field or property initializer, or a primary-constructor
@@ -136,12 +137,31 @@ For what the gateway does not model, a test reaches the host itself:
 | Member | Purpose |
 |---|---|
 | `Factory` | The `WebApplicationFactory<T>` that built the host (for example `Factory.WithWebHostBuilder(...)` for a variant host, disposed with this one) |
+| `StartVariant(configure)` | Starts a variant of the host, which the test owns (see [Variant hosts](#variant-hosts)) |
 | `Server` | The in-memory `TestServer` |
 | `Services` | The host's root service provider (create a scope for scoped services) |
 | `CreateClient()`, `CreateClient(WebApplicationFactoryClientOptions)` | A new raw `HttpClient` against the host |
 
 They are `protected` on `WebApiTest<T>` and `public` on `WebApiHost<TProgram>`, which also has `Client`, the raw
 client behind its `Gateway`.
+
+### Variant hosts
+
+A test that needs the host configured a little differently, one setting or one service, starts a variant of it
+(`Host.StartVariant(...)` in a `SharedWebApiTest<TProgram>`):
+
+```csharp
+using var variant = StartVariant(builder =>
+    builder.ConfigureTestServices(services => services.AddSingleton<IEmailService>(new FailingEmailService())));
+
+var response = await variant.Gateway.PostAsync<DataOutput<string>>("/invitations", invitation);
+```
+
+The variant is a host of its own, built as the host it comes from is (its `WebApiHostOptions`, then its
+`ConfigureWebHost`) and then as `configure` says. The test owns it: disposing it releases it, whether the host it
+came from still runs or not, and disposing that host leaves the variant running. Use it rather than
+`Factory.WithWebHostBuilder(...)`, whose variant belongs to the factory: disposing it releases nothing until the host
+is disposed, so a shared host keeps every variant its tests made alive until the end of the class or collection.
 
 ## Sharing one host between tests
 
@@ -215,10 +235,40 @@ API alive for the rest of the run, so a suite's test process grew with every tes
 The last two reach into internals of `Microsoft.AspNetCore.Mvc.Testing` and `Microsoft.AspNetCore.RateLimiting`; if a
 future version changes them, the host is disposed as before and stays alive as it used to. Turn
 `IsolateExecutionContext` off only when the API must see, while it starts, an `AsyncLocal` value the test set other
-than the culture. A global limiter the API sets in `RateLimiterOptions.GlobalLimiter` is the API's own and is not
-disposed: if its partitioner holds the API's services, it still keeps them alive. A variant host built with
-`Factory.WithWebHostBuilder(...)` gets fixes 2 and 3 when the host is disposed, but starts when the test first uses
-it, in the test's own execution context.
+than the culture.
+
+A variant host gets the same: one started with `StartVariant(...)` or made with `Factory.WithWebHostBuilder(...)`
+starts in an execution context of its own when the test first uses it, as its host does, and what it holds is
+released when it is disposed (`StartVariant`) or when its host is (`Factory.WithWebHostBuilder`).
+
+### The API's global rate limiter
+
+A global limiter the API sets in `RateLimiterOptions.GlobalLimiter` keeps whatever its partitioner holds alive after
+the host is disposed. `PartitionedRateLimiter.Create` starts a timer that runs until the limiter is disposed, and the
+timer holds the limiter, the limiter its partitioner, and the partitioner the services or options it partitions by,
+and through them, often, the host's whole service provider. ASP.NET Core never disposes that limiter, since the API
+set it, and the host does not either by default: the API may share one limiter between hosts (a `static` one, say),
+and the host cannot tell it from one the API builds for each host. Disposing a shared one would make every later
+host's requests fail with an `ObjectDisposedException`.
+
+When the API builds a new global limiter for each host, as one set inside `AddRateLimiter(options => ...)` is, say so,
+and disposing the host disposes it too:
+
+```csharp
+var options = new WebApiHostOptions { DisposeGlobalRateLimiter = true };
+```
+
+The API can also make that unneeded, which releases the limiter in production too. Let the host's container own
+the limiter, so it disposes it with the host:
+
+```csharp
+builder.Services.AddSingleton(services => PartitionedRateLimiter.Create<HttpContext, string>(context => ...));
+builder.Services.AddOptions<RateLimiterOptions>()
+    .Configure<PartitionedRateLimiter<HttpContext>>((options, limiter) => options.GlobalLimiter = limiter);
+```
+
+Or have the partitioner hold nothing of the host, resolving what it needs from `context.RequestServices` on each
+request: the limiter itself then still outlives the host, but keeps nothing else alive.
 
 ## Resource cleanup
 

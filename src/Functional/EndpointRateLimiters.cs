@@ -13,7 +13,7 @@ namespace ArturRios.Util.Test.Functional;
 // request pipeline from its first middleware along the delegates each middleware holds. If a version of them no
 // longer matches, nothing is found and nothing is disposed: the host is then only as collectable as it was before.
 // The global limiter (RateLimiterOptions.GlobalLimiter) is the API's own, possibly shared between hosts, and is left
-// alone.
+// alone: the host disposes it only when WebApiHostOptions.DisposeGlobalRateLimiter says the API builds one per host.
 internal static class EndpointRateLimiters
 {
     private const string MiddlewareType = "Microsoft.AspNetCore.RateLimiting.RateLimitingMiddleware";

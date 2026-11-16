@@ -62,9 +62,21 @@ public class WebApiTest<T> : IDisposable where T : class
 
     /// <summary>
     /// The factory that built the host, for what the other members do not reach (for example
-    /// <c>Factory.WithWebHostBuilder(...)</c> for a variant host, disposed with this one).
+    /// <c>Factory.WithWebHostBuilder(...)</c> for a variant host, disposed with this one; <see cref="StartVariant"/>
+    /// starts a variant the test owns).
     /// </summary>
     protected WebApplicationFactory<T> Factory => _host.Factory;
+
+    /// <summary>
+    /// Starts a variant of the host: a host of its own, built as this one is (the options, then
+    /// <see cref="ConfigureWebHost"/>), then as <paramref name="configure"/> says.
+    /// </summary>
+    /// <param name="configure">What the variant configures after this host's configuration.</param>
+    /// <returns>The started variant. The test owns it: dispose it when the test is done.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="configure"/> is <c>null</c>.</exception>
+    /// <exception cref="ObjectDisposedException">The test has been disposed.</exception>
+    /// <remarks>See <see cref="WebApiHost{TProgram}.StartVariant"/>.</remarks>
+    protected WebApiHost<T> StartVariant(Action<IWebHostBuilder> configure) => _host.StartVariant(configure);
 
     /// <summary>The in-memory test server the host runs on.</summary>
     protected TestServer Server => _host.Server;

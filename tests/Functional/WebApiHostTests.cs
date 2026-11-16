@@ -280,6 +280,76 @@ public sealed class WebApiHostTests : IDisposable
     }
 
     [Fact]
+    public async Task GivenAHost_WhenAVariantIsStarted_ThenItRunsTheHostsOptionsAndThenItsOwnConfiguration()
+    {
+        using var host = WebApiHost<Program>.Start(new WebApiHostOptions
+        {
+            EnvironmentName = "Testing",
+            LocalPort = 8080,
+            ConfigureWebHost = builder => builder.UseSetting("Sut:Greeting", "from the host")
+        });
+
+        using var variant = host.StartVariant(builder => builder.UseSetting("Sut:Greeting", "from the variant"));
+
+        var environment = await variant.Gateway.GetAsync<string>("/environment", Token);
+        var port = await variant.Gateway.GetAsync<int>("/port", Token);
+        var greeting = await variant.Gateway.GetAsync<string>("/configuration/startup", Token);
+        var hostGreeting = await host.Gateway.GetAsync<string>("/configuration/startup", Token);
+
+        Assert.Equal("Testing", environment.Body);
+        Assert.Equal(8080, port.Body);
+        Assert.Equal("from the variant", greeting.Body);
+        Assert.Equal("from the host", hostGreeting.Body);
+        Assert.NotSame(host.Services, variant.Services);
+    }
+
+    [Fact]
+    public async Task GivenADerivedHost_WhenAVariantIsStarted_ThenItRunsTheHostsOverride()
+    {
+        using var host = new GreetingHost("from the override");
+
+        using var variant = host.StartVariant(_ => { });
+
+        var response = await variant.Gateway.GetAsync<string>("/configuration/startup", Token);
+
+        Assert.Equal("from the override", response.Body);
+    }
+
+    [Fact]
+    public async Task GivenAVariant_WhenTheHostItWasStartedFromIsDisposed_ThenTheVariantStillAnswers()
+    {
+        var host = new WebApiHost<Program>();
+        using var variant = host.StartVariant(_ => { });
+
+        host.Dispose();
+        var response = await variant.Client.GetStringAsync("/environment", Token);
+
+        Assert.Equal("\"local\"", response);
+    }
+
+    [Fact]
+    public void GivenADisposedHostOrNoConfiguration_WhenAVariantIsStarted_ThenItIsRefused()
+    {
+        var host = new WebApiHost<Program>();
+
+        Assert.Throws<ArgumentNullException>(() => host.StartVariant(null!));
+        host.Dispose();
+        Assert.Throws<ObjectDisposedException>(() => host.StartVariant(_ => { }));
+    }
+
+    [Fact]
+    public async Task GivenTheGlobalLimiterOptionButNoGlobalLimiter_WhenTheHostIsDisposed_ThenNothingThrows()
+    {
+        var host = WebApiHost<Program>.Start(new WebApiHostOptions { DisposeGlobalRateLimiter = true });
+
+        var response = await host.Client.GetAsync("/limited", Token);
+        var exception = Record.Exception(host.Dispose);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Null(exception);
+    }
+
+    [Fact]
     public async Task GivenASharedHost_WhenTheRateLimitBudgetIsSpent_ThenResettingTheClientDoesNotRestoreIt()
     {
         // Why a shared host is unsafe for tests that depend on what the API keeps in memory.

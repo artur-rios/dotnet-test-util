@@ -101,5 +101,23 @@ public sealed class WebApiHostOptions
     /// </remarks>
     public bool IsolateExecutionContext { get; set; } = true;
 
+    /// <summary>
+    /// Whether disposing the host also disposes the API's global rate limiter (<c>RateLimiterOptions.GlobalLimiter</c>),
+    /// so that the host can be collected although the limiter's partitioner holds the API's services or options.
+    /// Defaults to <c>false</c>: the limiter is the API's own.
+    /// </summary>
+    /// <remarks>
+    /// A limiter made with <c>PartitionedRateLimiter.Create</c> runs a timer until it is disposed, and the timer holds
+    /// the limiter, its partitioner and whatever the partitioner holds, for the rest of the process. ASP.NET Core never
+    /// disposes the global limiter: the API sets it, and may share one instance between hosts (a <c>static</c> one,
+    /// say). The host cannot tell such a limiter from one the API builds for each host, so it disposes the limiter only
+    /// when told to. Turn it on when the API builds a new global limiter for each host, as one set inside
+    /// <c>AddRateLimiter(options => ...)</c> is. With it on, a host that starts after another was disposed and gets the
+    /// same, shared, limiter fails its requests with an <see cref="ObjectDisposedException"/>. An API can make this
+    /// option unneeded by registering its limiter as a singleton the host's container creates, and so disposes, and
+    /// setting <c>GlobalLimiter</c> from it.
+    /// </remarks>
+    public bool DisposeGlobalRateLimiter { get; set; }
+
     internal static string NameOf(EnvironmentType environment) => environment.ToString().ToLowerInvariant();
 }
