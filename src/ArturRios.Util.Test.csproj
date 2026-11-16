@@ -4,7 +4,7 @@
     <LangVersion>latest</LangVersion>
     <Authors>Artur Rios</Authors>
     <Company>Artur Rios</Company>
-    <Description>Test utilities for .NET projects: custom xUnit assertions and environment-aware test attributes, in-memory repository and scheduler fakes, and a base class for functional web API tests.</Description>
+    <Description>Test utilities for .NET projects: custom xUnit assertions and environment-aware test attributes, in-memory repository and scheduler fakes, a fake clock, environment-variable and culture scopes, a recording logger, and an in-memory host and base classes for functional web API tests.</Description>
     <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
@@ -35,6 +35,7 @@
     <PackageReference Include="ArturRios.Util.WebApi" Version="5.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.15" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.15" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.11.0" />
     <PackageReference Include="xunit.v3.assert" Version="4.0.3" />
     <PackageReference Include="xunit.v3.extensibility.core" Version="4.0.3" />
   </ItemGroup>
