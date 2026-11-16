@@ -177,6 +177,29 @@ public sealed class RepositoryParityTests : IDisposable
     }
 
     [Fact]
+    public async Task GivenACancelledToken_WhenCallingAnAsyncOperation_ThenBothReturnACancelledTaskRatherThanThrow()
+    {
+        var cancelled = new CancellationToken(canceled: true);
+
+        foreach (var (name, repository) in AsyncRepositories<Person>())
+        {
+            Task? getAll = null;
+            Task? create = null;
+
+            // Calling must not throw: the cancellation is in the task, where an await or a continuation sees it.
+            var thrown = Record.Exception(() =>
+            {
+                getAll = repository.GetAllAsync(cancelled);
+                create = repository.CreateAsync(new Person { Name = "Ann" }, cancelled);
+            });
+
+            Assert.True(thrown is null, $"{name}: {thrown}");
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => getAll!);
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => create!);
+        }
+    }
+
+    [Fact]
     public void GivenAFetchedList_WhenEntitiesAreCreatedAfterwards_ThenTheListIsASnapshot()
     {
         foreach (var (name, repository) in Repositories<Person>())

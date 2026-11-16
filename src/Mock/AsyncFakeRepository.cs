@@ -12,8 +12,9 @@ namespace ArturRios.Util.Test.Mock;
 /// that would affect no row — an unknown id, or an <see cref="IVersionedEntity"/> whose
 /// <see cref="IVersionedEntity.ConcurrencyStamp"/> is stale — fails with <see cref="RelationalErrors.ConcurrencyMessage"/>
 /// and changes nothing; and an update issues a new stamp, as the real context does.
-/// Operations complete synchronously; each returns an already-completed <see cref="Task"/> and honors the supplied
-/// <see cref="CancellationToken"/>.
+/// Operations complete synchronously; each returns an already-completed <see cref="Task"/>, or, when the supplied
+/// <see cref="CancellationToken"/> is already cancelled, an already-cancelled one and changes nothing. Like
+/// <c>EfRepository</c>'s, the methods never throw the cancellation themselves: it is in the task.
 /// </summary>
 /// <remarks>
 /// <para>How <see cref="CreateAsync"/> and <see cref="CreateRangeAsync"/> assign identifiers depends on the key type:</para>
@@ -129,10 +130,6 @@ public class AsyncFakeRepository<T, TKey> : IAsyncRepository<T, TKey> where T : 
     public Task<DataOutput<IEnumerable<TKey>>> DeleteRangeAsync(IEnumerable<TKey> ids, CancellationToken ct = default) =>
         Run(() => _store.DeleteRange(ids), ct);
 
-    private static Task<TResult> Run<TResult>(Func<TResult> operation, CancellationToken ct)
-    {
-        ct.ThrowIfCancellationRequested();
-
-        return Task.FromResult(operation());
-    }
+    private static Task<TResult> Run<TResult>(Func<TResult> operation, CancellationToken ct) =>
+        ct.IsCancellationRequested ? Task.FromCanceled<TResult>(ct) : Task.FromResult(operation());
 }
