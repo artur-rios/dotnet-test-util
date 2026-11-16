@@ -153,10 +153,12 @@ await repository.DeleteRangeAsync([annId, bobId]);
 
 `FakeScheduler` simulates a scheduled (delayed) dispatch of a command or query through an
 `ArturRios.Mediator.CommandQueryMediator`. It waits for a configurable delay and then dispatches, which is
-useful for testing code paths that would otherwise run on a timer or background schedule.
+useful for testing code paths that would otherwise run on a timer or background schedule. The delay runs on a
+`TimeProvider`: the system clock by default, or a clock the test controls.
 
 ```csharp
 FakeScheduler(CommandQueryMediator mediator, int waitTimeInSeconds = 60)
+FakeScheduler(CommandQueryMediator mediator, TimeProvider timeProvider, int waitTimeInSeconds = 60)
 ```
 
 | Method | Behavior |
@@ -177,6 +179,26 @@ var scheduler = new FakeScheduler(mediator, waitTimeInSeconds: 0);
 await scheduler.CreateCommandSchedule<PingCommand, PingCommandOutput>(new PingCommand { Value = "ping" });
 // the handler has now been invoked through the mediator
 ```
+
+### A fake clock
+
+To test the delay itself, including the 60-second default, without waiting for it, pass a `FakeTimeProvider` and
+move it by hand. `FakeTimeProvider` is Microsoft's (`Microsoft.Extensions.Time.Testing`, from the
+`Microsoft.Extensions.TimeProvider.Testing` package, which this package brings along):
+
+```csharp
+var clock = new FakeTimeProvider();
+var scheduler = new FakeScheduler(mediator, clock);
+
+var schedule = scheduler.CreateCommandSchedule<PingCommand, PingCommandOutput>(new PingCommand());
+
+clock.Advance(TimeSpan.FromSeconds(59));   // not dispatched yet
+clock.Advance(TimeSpan.FromSeconds(1));    // the delay has elapsed
+await schedule;                            // dispatched
+```
+
+The same clock can stand in for the API's own in a functional test: `WebApiHostOptions.TimeProvider` replaces every
+`TimeProvider` the API registered (see [Web API Testing](../web-api-testing/#configuring-the-host)).
 
 ## Upgrading to 4.0
 

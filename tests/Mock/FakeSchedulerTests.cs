@@ -4,6 +4,7 @@ using ArturRios.Mediator.Command.Interfaces;
 using ArturRios.Mediator.Query.Interfaces;
 using ArturRios.Util.Test.Mock;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Time.Testing;
 
 namespace ArturRios.Util.Test.Tests.Mock;
 
@@ -56,7 +57,7 @@ public class FakeSchedulerTests
     [Fact]
     public async Task GivenAConfiguredDelay_WhenTheScheduleStarts_ThenNothingIsDispatchedUntilTheDelayHasElapsed()
     {
-        // One second is the smallest delay the scheduler takes: it has no clock to fake.
+        // The system clock, as the constructor without a TimeProvider uses: one second is the smallest delay it takes.
         var mediator = BuildMediator(out var commandHandler, out _);
         var scheduler = new FakeScheduler(mediator, waitTimeInSeconds: 1);
         var stopwatch = Stopwatch.StartNew();
@@ -116,5 +117,51 @@ public class FakeSchedulerTests
 
         await Assert.ThrowsAsync<InvalidOperationException>(
             () => scheduler.CreateQuerySchedule<PingQuery, PingQueryOutput>(new PingQuery()));
+    }
+
+    [Fact]
+    public async Task GivenAFakeClock_WhenTheDefaultDelayHasNotElapsed_ThenNothingIsDispatchedUntilItHas()
+    {
+        var mediator = BuildMediator(out var commandHandler, out _);
+        var clock = new FakeTimeProvider();
+        var scheduler = new FakeScheduler(mediator, clock);
+
+        var schedule = scheduler.CreateCommandSchedule<PingCommand, PingCommandOutput>(new PingCommand { Value = "x" });
+        clock.Advance(TimeSpan.FromSeconds(59));
+
+        Assert.False(schedule.IsCompleted);
+        Assert.False(commandHandler.WasCalled);
+
+        clock.Advance(TimeSpan.FromSeconds(1));
+        await schedule;
+
+        Assert.True(commandHandler.WasCalled);
+    }
+
+    [Fact]
+    public async Task GivenAFakeClockAndADelay_WhenTheClockPassesIt_ThenTheQueryIsDispatched()
+    {
+        var mediator = BuildMediator(out _, out var queryHandler);
+        var clock = new FakeTimeProvider();
+        var scheduler = new FakeScheduler(mediator, clock, waitTimeInSeconds: 300);
+        var query = new PingQuery { Value = "ask" };
+
+        var schedule = scheduler.CreateQuerySchedule<PingQuery, PingQueryOutput>(query);
+        clock.Advance(TimeSpan.FromMinutes(4));
+
+        Assert.False(queryHandler.WasCalled);
+
+        clock.Advance(TimeSpan.FromMinutes(1));
+        await schedule;
+
+        Assert.Same(query, queryHandler.Received);
+    }
+
+    [Fact]
+    public void GivenNoClock_WhenTheSchedulerIsCreated_ThenItIsRefused()
+    {
+        var mediator = BuildMediator(out _, out _);
+
+        Assert.Throws<ArgumentNullException>(() => new FakeScheduler(mediator, (TimeProvider)null!));
     }
 }
