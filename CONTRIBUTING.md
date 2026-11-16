@@ -35,11 +35,13 @@ dotnet test src/ArturRios.Util.Test.sln --filter "Category=Functional"
 ```
 
 Unit tests exercise the assertions, attributes and fakes in isolation.
-Functional tests host the `sut/` web app in memory through `WebApiTest<Program>` and drive real HTTP
-requests against it.
+Functional tests host the `sut/` web app in memory through `WebApiTest<Program>` and `WebApiHost<Program>` and drive
+real HTTP requests against it.
 The suite runs in parallel, except for the test classes that set the process-wide `ASPNETCORE_ENVIRONMENT`
-variable (the attribute tests and every `WebApiTest<Program>` host): they share the `EnvironmentVariableCollection`
-and run one at a time. A new test class that sets or reads the variable joins that collection.
+variable (the attribute tests and every `WebApiTest<Program>` or `WebApiHost<Program>` host): they share the
+`EnvironmentVariableCollection` and run one at a time. A new test class that sets or reads the variable joins that
+collection. The `EnvironmentVariableScope` tests use variables named after a new `Guid`, which nothing else reads, so
+they run in parallel.
 
 CI runs the suite once, in the `coverage` check (`ci/coverage.sh`): every test of both kinds, with coverage
 collected, and the HTML report that the docs site serves at `/coverage-report/`. Every test must pass, and none may

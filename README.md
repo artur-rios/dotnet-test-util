@@ -6,7 +6,8 @@
 
 `ArturRios.Util.Test` is a small .NET library of test-support utilities for xUnit projects. It bundles the
 helpers that come up again and again when testing services and web APIs: extra assertions, environment-aware
-test attributes, in-memory fakes for repositories and schedulers, and a base class for functional web API tests.
+test attributes, in-memory fakes for repositories and schedulers, scopes for environment variables and cultures, a
+recording logger, and an in-memory web API host, as a base class or as a fixture shared by a class's tests.
 
 ## Installation
 
@@ -23,8 +24,8 @@ The package targets **net10.0** and builds on other `ArturRios.*` packages
 [`ArturRios.Mediator`](https://www.nuget.org/packages/ArturRios.Mediator),
 [`ArturRios.Configuration`](https://www.nuget.org/packages/ArturRios.Configuration) and
 [`ArturRios.Util.WebApi`](https://www.nuget.org/packages/ArturRios.Util.WebApi)) plus xUnit v3's
-`xunit.v3.extensibility.core` and `xunit.v3.assert`, `Microsoft.AspNetCore.Mvc.Testing` and
-`Microsoft.EntityFrameworkCore`.
+`xunit.v3.extensibility.core` and `xunit.v3.assert`, `Microsoft.AspNetCore.Mvc.Testing`,
+`Microsoft.EntityFrameworkCore` and `Microsoft.Extensions.TimeProvider.Testing` (Microsoft's `FakeTimeProvider`).
 
 ## What's inside
 
@@ -34,8 +35,12 @@ The package targets **net10.0** and builds on other `ArturRios.*` packages
 | `UnitFactAttribute`, `UnitTheoryAttribute`, `FunctionalFactAttribute`, `FunctionalTheoryAttribute` | Test attributes that can skip tests per environment or on a condition |
 | `FakeRepository<T, TKey>` | In-memory `IRepository<T, TKey>` implementation, for any entity key type |
 | `AsyncFakeRepository<T, TKey>` | In-memory `IAsyncRepository<T, TKey>` implementation with cancellation support and async-capable `Query()` |
-| `FakeScheduler` | Simulates a delayed command/query dispatch through a `CommandQueryMediator` |
-| `WebApiTest<T>` | Base class for functional web API tests using an in-memory host |
+| `FakeScheduler` | Simulates a delayed command/query dispatch through a `CommandQueryMediator`, on the system clock or a `FakeTimeProvider` |
+| `WebApiTest<T>` | Base class for functional web API tests using an in-memory host, one per test |
+| `WebApiHost<TProgram>`, `SharedWebApiTest<TProgram>` | The same host as an xUnit class or collection fixture shared by the tests, and a base class for those tests |
+| `WebApiHostOptions` | Configures either host: environment, configuration, services, clock, loggers, local port, client |
+| `EnvironmentVariableScope`, `CultureScope` | Set environment variables or the current cultures for one test and restore them |
+| `RecordingLogger`, `RecordingLoggerProvider`, `LogAssert` | Keep what the code under test logs, and assert on it |
 | `TestException` | Exception raised by the utilities when a test-support operation fails |
 
 ## Quick Start
@@ -91,6 +96,38 @@ public class ProductsApiTests : WebApiTest<Program>
 }
 ```
 
+### A host shared by a test class
+
+```csharp
+public class OrdersApiTests(WebApiHost<Program> host)
+    : SharedWebApiTest<Program>(host), IClassFixture<WebApiHost<Program>>
+{
+    [Fact]
+    public async Task Lists_orders()
+    {
+        Authorize(token);   // each test starts with a fresh client: no headers, token or cookies
+
+        var response = await Gateway.GetAsync<DataOutput<OrderOutput[]>>("/orders");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+}
+```
+
+### Scopes, a fake clock and a recording logger
+
+```csharp
+using var environment = new EnvironmentVariableScope(("MAILGUN_API_KEY", "key"), ("MAILGUN_DOMAIN", null));
+using var culture = new CultureScope("pt-BR");
+
+var clock = new FakeTimeProvider();
+var logs = new RecordingLoggerProvider();
+using var host = WebApiHost<Program>.Start(new WebApiHostOptions { TimeProvider = clock, LoggerProviders = { logs } });
+
+clock.Advance(TimeSpan.FromMinutes(5));
+LogAssert.NoneAtOrAbove(logs.Entries, LogLevel.Error);
+```
+
 ## Documentation
 
 Full documentation, with per-component guides, lives at
@@ -99,6 +136,7 @@ Full documentation, with per-component guides, lives at
 - [Assertions & Attributes](https://docs.artur-rios.tech/dotnet-test-util/docs/assertions-and-attributes/)
 - [Fakes](https://docs.artur-rios.tech/dotnet-test-util/docs/fakes/)
 - [Web API Testing](https://docs.artur-rios.tech/dotnet-test-util/docs/web-api-testing/)
+- [Scopes & Logging](https://docs.artur-rios.tech/dotnet-test-util/docs/scopes-and-logging/)
 
 ## Upgrading
 

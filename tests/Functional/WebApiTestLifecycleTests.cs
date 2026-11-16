@@ -1,6 +1,9 @@
 using ArturRios.Configuration.Enums;
 using ArturRios.Util.Http;
 using ArturRios.Util.Test.Functional;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ArturRios.Util.Test.Tests.Functional;
 
@@ -31,6 +34,78 @@ public sealed class WebApiTestLifecycleTests : IDisposable
 
             base.Dispose(disposing);
         }
+    }
+
+    /// <summary>A test class deriving from <see cref="WebApiTest{T}"/> with the newer constructors and members.</summary>
+    private sealed class ConfiguredHost : WebApiTest<Program>
+    {
+        public ConfiguredHost(string environmentName) : base(environmentName)
+        {
+        }
+
+        public ConfiguredHost(WebApiHostOptions options) : base(options)
+        {
+        }
+
+        public string Greeting { get; init; } = "from the override";
+
+        public HttpGateway Http => Gateway;
+
+        public WebApplicationFactory<Program> HostFactory => Factory;
+
+        public Microsoft.AspNetCore.TestHost.TestServer HostServer => Server;
+
+        public IServiceProvider HostServices => Services;
+
+        public HttpClient NewClient() => CreateClient();
+
+        public HttpClient NewClient(WebApplicationFactoryClientOptions options) => CreateClient(options);
+
+        // A property initializer runs before the base constructor starts the host.
+        protected override void ConfigureWebHost(IWebHostBuilder builder) => builder.UseSetting("Sut:Greeting", Greeting);
+    }
+
+    [Fact]
+    public async Task GivenAnEnvironmentName_WhenTheHostStarts_ThenTheVariableAndTheHostUseItAsGiven()
+    {
+        using var host = new ConfiguredHost("Testing");
+
+        var response = await host.Http.GetAsync<string>("/environment", TestContext.Current.CancellationToken);
+
+        Assert.Equal("Testing", Environment.GetEnvironmentVariable(Variable));
+        Assert.Equal("Testing", response.Body);
+    }
+
+    [Fact]
+    public async Task GivenOptionsAndAnOverride_WhenTheHostStarts_ThenBothConfigureIt()
+    {
+        var options = new WebApiHostOptions(EnvironmentType.Development) { LocalPort = 8080 };
+
+        using var host = new ConfiguredHost(options);
+
+        var environment = await host.Http.GetAsync<string>("/environment", TestContext.Current.CancellationToken);
+        var port = await host.Http.GetAsync<int>("/port", TestContext.Current.CancellationToken);
+        var greeting = await host.Http.GetAsync<string>("/configuration/startup", TestContext.Current.CancellationToken);
+
+        Assert.Equal("development", environment.Body);
+        Assert.Equal(8080, port.Body);
+        Assert.Equal("from the override", greeting.Body);
+    }
+
+    [Fact]
+    public async Task GivenAStartedHost_WhenADerivedTestReachesTheFactoryServerServicesAndRawClients_ThenTheyAreTheHostsOwn()
+    {
+        using var host = new ConfiguredHost("local");
+
+        using var client = host.NewClient();
+        using var other = host.NewClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("http://api.test/") });
+        var response = await client.GetStringAsync("/environment", TestContext.Current.CancellationToken);
+
+        Assert.Equal("\"local\"", response);
+        Assert.Equal(new Uri("http://api.test/"), other.BaseAddress);
+        Assert.Same(host.HostServer, host.HostFactory.Server);
+        Assert.Same(host.HostServices, host.HostFactory.Services);
+        Assert.Same(TimeProvider.System, host.HostServices.GetService<TimeProvider>());
     }
 
     [Theory]
