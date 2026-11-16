@@ -359,7 +359,7 @@ public class WebApiHost<TProgram> : IDisposable where TProgram : class
         var uiCulture = CultureInfo.CurrentUICulture;
         ExceptionDispatchInfo? failure = null;
 
-        var thread = new Thread(() =>
+        void StartInContext()
         {
             CultureInfo.CurrentCulture = culture;
             CultureInfo.CurrentUICulture = uiCulture;
@@ -372,12 +372,17 @@ public class WebApiHost<TProgram> : IDisposable where TProgram : class
             {
                 failure = ExceptionDispatchInfo.Capture(exception);
             }
-        }) { IsBackground = true, Name = "WebApiHost start" };
+        }
+
+        var thread = new Thread(StartInContext) { IsBackground = true, Name = "WebApiHost start" };
 
         thread.UnsafeStart();
         thread.Join();
 
-        failure?.Throw();
+        if (failure is not null)
+        {
+            failure.Throw();
+        }
     }
 
     private sealed class HostFactory(Action<IWebHostBuilder> configure) : WebApplicationFactory<TProgram>
