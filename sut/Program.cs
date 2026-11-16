@@ -34,6 +34,17 @@ builder.Services.AddRateLimiter(options =>
     });
 });
 
+// A global limiter whose partitioner holds the app's services, as an API's partitioner holds the options or services
+// it partitions by. It runs a timer until it is disposed, which holds the limiter and so the services: only the hosts
+// of the tests that look for that run it.
+if (builder.Configuration.GetValue<bool>("Sut:GlobalLimiter"))
+{
+    builder.Services.AddOptions<RateLimiterOptions>().Configure<IServiceProvider>((options, services) =>
+        options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(_ =>
+            RateLimitPartition.GetFixedWindowLimiter(services.GetRequiredService<IWebHostEnvironment>().EnvironmentName,
+                key => new FixedWindowRateLimiterOptions { PermitLimit = 100, Window = TimeSpan.FromMinutes(1) })));
+}
+
 var app = builder.Build();
 
 // Started with the host and never stopped, like the rate limiter's own timer.

@@ -13,7 +13,8 @@ namespace ArturRios.Util.Test.Tests.Functional;
 /// limiter's timer also holds its middleware, and through it the whole application. A test sending a request
 /// through <c>GET /limited</c> puts both limiters to work. Variants of a host, made with
 /// <c>Factory.WithWebHostBuilder(...)</c> or <c>StartVariant</c>, start as their host does and are released as it
-/// is.
+/// is. A host whose API runs a global limiter with a partitioner that holds its services (<c>Sut:GlobalLimiter</c>)
+/// is collected only when it is told to dispose that limiter.
 /// The tests stand an ambient value of their own for xUnit's test context: it is set while the host starts and holds
 /// the host, as xUnit's context reaches the test that holds it.
 /// </summary>
@@ -143,6 +144,36 @@ public sealed class WebApiHostLeakTests : IDisposable
     }
 
     [Fact]
+    public async Task GivenAGlobalLimiterThatHoldsTheServices_WhenTheHostDisposesIt_ThenTheServicesCanBeCollected()
+    {
+        var (host, services) = StartUseAndDispose(() =>
+        {
+            var started = WebApiHost<Program>.Start(GlobalLimiterOptions(disposeGlobalRateLimiter: true));
+
+            return (started, started.Services, started.Client);
+        });
+
+        Assert.True(await IsCollectedAsync(services), "The disposed host's services are still alive");
+        Assert.True(await IsCollectedAsync(host), "The disposed host is still alive");
+    }
+
+    [Fact]
+    public async Task GivenAGlobalLimiterThatHoldsTheServices_WhenTheHostLeavesIt_ThenItKeepsTheServicesAlive()
+    {
+        // The control of the test above, and the reason the option is off by default: the global limiter runs a timer
+        // until it is disposed, which holds it and its partitioner, and the partitioner holds the services. The host
+        // cannot tell a limiter the API builds for it from one the API shares between hosts, so it leaves it.
+        var (_, services) = StartUseAndDispose(() =>
+        {
+            var started = WebApiHost<Program>.Start(GlobalLimiterOptions(disposeGlobalRateLimiter: false));
+
+            return (started, started.Services, started.Client);
+        });
+
+        Assert.False(await IsCollectedAsync(services, attempts: 3), "The host's services were collected after all");
+    }
+
+    [Fact]
     public async Task GivenTheHostStartsInTheCallersContext_WhenDisposed_ThenTheTimerItStartedKeepsItAlive()
     {
         // The control: with the isolation turned off, the timer's captured context holds the host, so the tests
@@ -156,6 +187,13 @@ public sealed class WebApiHostLeakTests : IDisposable
 
         Assert.False(await IsCollectedAsync(services, attempts: 3), "The host was collected after all");
     }
+
+    // A host whose API runs a global limiter with a partitioner that holds its services (sut/Program.cs).
+    private static WebApiHostOptions GlobalLimiterOptions(bool disposeGlobalRateLimiter) => new()
+    {
+        Configuration = { ["Sut:GlobalLimiter"] = "true" },
+        DisposeGlobalRateLimiter = disposeGlobalRateLimiter
+    };
 
     // Starts a host while the ambient value holds it, sends it a request, disposes it and clears the ambient value,
     // returning weak references only: once this returns, nothing but what the host itself started can keep it alive.

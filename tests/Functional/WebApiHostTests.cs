@@ -338,6 +338,18 @@ public sealed class WebApiHostTests : IDisposable
     }
 
     [Fact]
+    public async Task GivenTheGlobalLimiterOptionButNoGlobalLimiter_WhenTheHostIsDisposed_ThenNothingThrows()
+    {
+        var host = WebApiHost<Program>.Start(new WebApiHostOptions { DisposeGlobalRateLimiter = true });
+
+        var response = await host.Client.GetAsync("/limited", Token);
+        var exception = Record.Exception(host.Dispose);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Null(exception);
+    }
+
+    [Fact]
     public async Task GivenASharedHost_WhenTheRateLimitBudgetIsSpent_ThenResettingTheClientDoesNotRestoreIt()
     {
         // Why a shared host is unsafe for tests that depend on what the API keeps in memory.

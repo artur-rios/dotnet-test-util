@@ -35,6 +35,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - `WebApiHost<TProgram>.StartVariant(Action<IWebHostBuilder>)` (and the protected `WebApiTest<T>.StartVariant`)
   starts a variant of a host: a host of its own, built as the host is and then as the action says, which the test
   owns and disposes, and which is released when disposed even while the host it came from runs on.
+- `WebApiHostOptions.DisposeGlobalRateLimiter`: disposing the host also disposes the API's global rate limiter
+  (`RateLimiterOptions.GlobalLimiter`), for an API that builds one for each host. Off by default, since an API may
+  share one limiter between hosts.
 
 ### Fixed
 
@@ -50,6 +53,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - A variant host made with `Factory.WithWebHostBuilder(...)` starts in an execution context of its own, as its host
   does. It started in the test's, so a timer the API started captured the test's context and kept the variant, and
   the host it came from, alive after both were disposed.
+- A host whose API's global rate limiter holds its services can be garbage-collected, with
+  `WebApiHostOptions.DisposeGlobalRateLimiter` on. The limiter's own timer kept it, its partitioner and what that
+  holds alive after the host was disposed; the host leaves it alone by default, since the API may share it between
+  hosts, and the documentation says what an API can do instead.
 - `AsyncFakeRepository.Query()` hands back the exception a query operator throws, as EF Core does. `SingleAsync` or
   `FirstAsync` with no match threw a `TargetInvocationException` wrapping the `InvalidOperationException`, so a
   handler that catches `InvalidOperationException` behaved differently against the fake and in production.

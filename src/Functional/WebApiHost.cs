@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -57,6 +58,7 @@ public class WebApiHost<TProgram> : IDisposable where TProgram : class
     private readonly Action<IWebHostBuilder>? _configureDerived;
     private readonly HostFactory _factory;
     private readonly List<object> _entryPointListeners = [];
+    private readonly List<IDisposable> _globalLimiters = [];
     private readonly WebApiHostOptions _options;
     private bool _disposed;
     private readonly Lock _gate = new();
@@ -298,6 +300,17 @@ public class WebApiHost<TProgram> : IDisposable where TProgram : class
         }
     }
 
+    private void CaptureGlobalLimiter(RateLimiterOptions options)
+    {
+        if (options.GlobalLimiter is { } limiter)
+        {
+            lock (_gate)
+            {
+                _globalLimiters.Add(limiter);
+            }
+        }
+    }
+
     private void CapturePipeline(RequestDelegate pipeline)
     {
         lock (_gate)
@@ -318,6 +331,8 @@ public class WebApiHost<TProgram> : IDisposable where TProgram : class
             _pipelines.Clear();
             _entryPointListeners.ForEach(EntryPointListener.Release);
             _entryPointListeners.Clear();
+            _globalLimiters.ForEach(limiter => limiter.Dispose());
+            _globalLimiters.Clear();
         }
     }
 
@@ -357,6 +372,12 @@ public class WebApiHost<TProgram> : IDisposable where TProgram : class
 
             services.AddSingleton<IStartupFilter>(
                 new HostStartupFilter(options.LocalPort, CapturePipeline));
+
+            if (options.DisposeGlobalRateLimiter)
+            {
+                // Runs after every configuration of the API's own, when the rate-limiting middleware reads the options.
+                services.PostConfigure<RateLimiterOptions>(CaptureGlobalLimiter);
+            }
 
             if (options.LoggerProviders.Count > 0)
             {
