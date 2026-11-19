@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [6.1.0] - 2026-11-19
+
 ### Added
 
 - `WebApiHostOptions` configures the in-memory host of `WebApiTest<T>` (new constructor `WebApiTest(WebApiHostOptions)`)
@@ -265,7 +267,8 @@ read-only bases), exactly as `EfRepository<T, TKey>` does.
 - In-memory `FakeRepository<T>` and `FakeScheduler`.
 - `WebApiTest<T>`, a base class for functional web API tests on an in-memory host, and `TestException`.
 
-[Unreleased]: https://github.com/artur-rios/dotnet-test-util/compare/6.0.0...HEAD
+[Unreleased]: https://github.com/artur-rios/dotnet-test-util/compare/6.1.0...HEAD
+[6.1.0]: https://github.com/artur-rios/dotnet-test-util/compare/6.0.0...6.1.0
 [6.0.0]: https://github.com/artur-rios/dotnet-test-util/compare/5.0.1...6.0.0
 [5.0.1]: https://github.com/artur-rios/dotnet-test-util/compare/5.0.0...5.0.1
 [5.0.0]: https://github.com/artur-rios/dotnet-test-util/compare/4.0.0...5.0.0
