@@ -7,11 +7,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [6.1.1] - 2026-11-19
+
 ### Changed
 
-- `ArturRios.Configuration` updated from 2.0.1 to 2.0.2, `ArturRios.Data.Relational.Core` from 5.0.2 to 5.0.3,
-  `ArturRios.Mediator` from 2.0.2 to 2.0.3, `ArturRios.Util` from 2.2.1 to 2.3.0 and `ArturRios.Util.WebApi` from
-  6.0.0 to 6.0.1.
+- `ArturRios.Configuration` updated from 2.0.1 to 2.0.3, `ArturRios.Data.Relational.Core` from 5.0.2 to 5.0.4,
+  `ArturRios.Mediator` from 2.0.2 to 2.0.4, `ArturRios.Util` from 2.2.1 to 2.3.1 and `ArturRios.Util.WebApi` from
+  6.0.0 to 6.0.2.
 
 ## [6.1.0] - 2026-11-19
 
@@ -273,7 +275,8 @@ read-only bases), exactly as `EfRepository<T, TKey>` does.
 - In-memory `FakeRepository<T>` and `FakeScheduler`.
 - `WebApiTest<T>`, a base class for functional web API tests on an in-memory host, and `TestException`.
 
-[Unreleased]: https://github.com/artur-rios/dotnet-test-util/compare/6.1.0...HEAD
+[Unreleased]: https://github.com/artur-rios/dotnet-test-util/compare/6.1.1...HEAD
+[6.1.1]: https://github.com/artur-rios/dotnet-test-util/compare/6.1.0...6.1.1
 [6.1.0]: https://github.com/artur-rios/dotnet-test-util/compare/6.0.0...6.1.0
 [6.0.0]: https://github.com/artur-rios/dotnet-test-util/compare/5.0.1...6.0.0
 [5.0.1]: https://github.com/artur-rios/dotnet-test-util/compare/5.0.0...5.0.1
