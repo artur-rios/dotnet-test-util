@@ -7,6 +7,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- `ArturRios.Configuration` updated from 2.0.1 to 2.0.2, `ArturRios.Data.Relational.Core` from 5.0.2 to 5.0.3,
+  `ArturRios.Mediator` from 2.0.2 to 2.0.3, `ArturRios.Util` from 2.2.1 to 2.3.0 and `ArturRios.Util.WebApi` from
+  6.0.0 to 6.0.1.
+
 ## [6.1.0] - 2026-11-19
 
 ### Added
