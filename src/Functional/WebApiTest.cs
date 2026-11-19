@@ -16,9 +16,11 @@ namespace ArturRios.Util.Test.Functional;
 /// <typeparam name="T">The entry point type of the web API under test (typically its <c>Program</c> class).</typeparam>
 /// <remarks>
 /// <para>
-/// The constructor also sets the process-wide <c>ASPNETCORE_ENVIRONMENT</c> variable, because that is what
-/// the environment-aware test attributes read. Two test classes deriving from this with different
-/// environments therefore cannot run in parallel; put them in one xUnit collection when that comes up.
+/// The constructor also sets the process-wide <c>ASPNETCORE_ENVIRONMENT</c> variable, for code of the API that
+/// reads it itself (in <c>Program.cs</c>, before <c>Build()</c>, say), and disposing the test puts its earlier value
+/// back. Two test classes deriving from this with different environments therefore cannot run in parallel; put them in
+/// one xUnit collection when that comes up. The environment-aware test attributes read the variable when the tests are
+/// discovered, before any host starts, so a host does not change which tests they skip.
 /// </para>
 /// <para>
 /// xUnit creates a test class instance per test, so a class deriving from this starts a host per test. To share

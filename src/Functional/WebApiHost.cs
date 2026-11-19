@@ -32,7 +32,8 @@ namespace ArturRios.Util.Test.Functional;
 /// <remarks>
 /// <para>
 /// The host starts in the constructor. Unless <see cref="WebApiHostOptions.SetEnvironmentVariable"/> is turned off,
-/// starting it also sets the process-wide <c>ASPNETCORE_ENVIRONMENT</c> variable, so hosts of different environments
+/// starting it also sets the process-wide <c>ASPNETCORE_ENVIRONMENT</c> variable until it is disposed (once the last
+/// host that set it is disposed, the variable has its earlier value again), so hosts of different environments
 /// cannot start in parallel; put the test classes in one xUnit collection when that comes up.
 /// </para>
 /// <para>
@@ -52,8 +53,6 @@ namespace ArturRios.Util.Test.Functional;
 /// </remarks>
 public class WebApiHost<TProgram> : IDisposable where TProgram : class
 {
-    private const string EnvironmentVariable = "ASPNETCORE_ENVIRONMENT";
-
     private readonly WebApplicationFactoryClientOptions _clientOptions;
     private readonly Action<IWebHostBuilder>? _configureDerived;
     private readonly HostFactory _factory;
@@ -61,6 +60,7 @@ public class WebApiHost<TProgram> : IDisposable where TProgram : class
     private readonly List<IDisposable> _globalLimiters = [];
     private readonly WebApiHostOptions _options;
     private bool _disposed;
+    private bool _holdsEnvironmentVariable;
     private readonly Lock _gate = new();
     private readonly List<RequestDelegate> _pipelines = [];
 
@@ -105,7 +105,8 @@ public class WebApiHost<TProgram> : IDisposable where TProgram : class
 
         if (options.SetEnvironmentVariable)
         {
-            Environment.SetEnvironmentVariable(EnvironmentVariable, EnvironmentName);
+            EnvironmentVariableLease.Acquire(EnvironmentName);
+            _holdsEnvironmentVariable = true;
         }
 
         _factory = new HostFactory(Configure, options.IsolateExecutionContext);
@@ -333,6 +334,12 @@ public class WebApiHost<TProgram> : IDisposable where TProgram : class
             _entryPointListeners.Clear();
             _globalLimiters.ForEach(limiter => limiter.Dispose());
             _globalLimiters.Clear();
+
+            if (_holdsEnvironmentVariable)
+            {
+                _holdsEnvironmentVariable = false;
+                EnvironmentVariableLease.Release();
+            }
         }
     }
 

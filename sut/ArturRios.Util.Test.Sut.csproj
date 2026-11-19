@@ -9,7 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="ArturRios.Output" Version="3.3.2" />
-    <PackageReference Include="ArturRios.Util.WebApi" Version="5.2.0" />
+    <PackageReference Include="ArturRios.Util.WebApi" Version="6.0.0" />
   </ItemGroup>
 
 </Project>

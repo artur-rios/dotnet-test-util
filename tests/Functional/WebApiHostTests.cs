@@ -85,6 +85,43 @@ public sealed class WebApiHostTests : IDisposable
     }
 
     [Fact]
+    public void GivenAVariableSetBeforeTheHost_WhenTheHostIsDisposed_ThenTheVariableIsPutBack()
+    {
+        Environment.SetEnvironmentVariable(Variable, "before");
+
+        var host = new NamedHost("Testing");
+        Assert.Equal("Testing", Environment.GetEnvironmentVariable(Variable));
+        host.Dispose();
+
+        Assert.Equal("before", Environment.GetEnvironmentVariable(Variable));
+    }
+
+    [Fact]
+    public void GivenNoVariableBeforeTheHost_WhenTheHostIsDisposed_ThenTheVariableIsUnsetAgain()
+    {
+        Environment.SetEnvironmentVariable(Variable, null);
+
+        new NamedHost("Testing").Dispose();
+
+        Assert.Null(Environment.GetEnvironmentVariable(Variable));
+    }
+
+    [Fact]
+    public void GivenTwoHostsOfOneEnvironment_WhenTheFirstIsDisposed_ThenTheVariableStaysUntilTheLastIs()
+    {
+        Environment.SetEnvironmentVariable(Variable, "before");
+
+        var first = new NamedHost("Testing");
+        var second = new NamedHost("Testing");
+
+        first.Dispose();
+        Assert.Equal("Testing", Environment.GetEnvironmentVariable(Variable));
+
+        second.Dispose();
+        Assert.Equal("before", Environment.GetEnvironmentVariable(Variable));
+    }
+
+    [Fact]
     public async Task GivenTheVariableIsNotToBeSet_WhenTheHostStarts_ThenItRunsAsItsEnvironmentAndLeavesTheVariable()
     {
         Environment.SetEnvironmentVariable(Variable, "untouched");
