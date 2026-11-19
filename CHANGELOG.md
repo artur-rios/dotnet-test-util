@@ -7,6 +7,83 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [6.1.0] - 2026-11-19
+
+### Added
+
+- `WebApiHostOptions` configures the in-memory host of `WebApiTest<T>` (new constructor `WebApiTest(WebApiHostOptions)`)
+  and of `WebApiHost<TProgram>`: the environment name, whether to set `ASPNETCORE_ENVIRONMENT`, configuration values
+  (seen also by what `Program.cs` reads before `Build()`), services to add or replace, a `TimeProvider`, logger
+  providers, a faked local port, and the client's options.
+- `WebApiTest<T>` takes an environment name of the API's own (`WebApiTest(string)`), has a virtual
+  `ConfigureWebHost(IWebHostBuilder)` to configure the host, and reaches it directly through `Factory`, `Server`,
+  `Services` and `CreateClient()`, for requests the gateway does not model.
+- `WebApiHost<TProgram>`, the same in-memory host as an xUnit class or collection fixture, so the tests of a class
+  share one host instead of starting one each, and `SharedWebApiTest<TProgram>`, a base class that gives a test using
+  it `Gateway`, `AuthenticateAsync`, `Authorize` and `AuthenticateAndAuthorizeAsync`, with a fresh client (no
+  headers, token or cookies) for every test. `WebApiHost<TProgram>.Start(options)` starts a host a test owns. The
+  documentation says when a shared host is unsafe: whatever the API keeps in memory, rate-limiter budgets included,
+  is shared by its tests.
+- `FakeScheduler(CommandQueryMediator, TimeProvider, int)`: the scheduler's delay, the 60-second default included,
+  runs on the given clock, so a test can make it elapse with a `FakeTimeProvider`. The package now references
+  `Microsoft.Extensions.TimeProvider.Testing`, which provides `FakeTimeProvider`.
+- `EnvironmentVariableScope`, which sets and clears environment variables and restores what each held, value or none,
+  when disposed, and `CultureScope`, which sets the current culture and UI culture and restores them
+  (`ArturRios.Util.Test.Scopes`).
+- `RecordingLogger`, `RecordingLogger<T>` and `RecordingLoggerProvider`, which keep the level, event id, message,
+  exception, state and scopes of every entry logged to them, and `LogAssert`, with assertions over those entries
+  (`ArturRios.Util.Test.Logging`). A `RecordingLoggerProvider` plugs into a host through
+  `WebApiHostOptions.LoggerProviders`.
+- `WebApiHost<TProgram>.StartVariant(Action<IWebHostBuilder>)` (and the protected `WebApiTest<T>.StartVariant`)
+  starts a variant of a host: a host of its own, built as the host is and then as the action says, which the test
+  owns and disposes, and which is released when disposed even while the host it came from runs on.
+- `WebApiHostOptions.DisposeGlobalRateLimiter`: disposing the host also disposes the API's global rate limiter
+  (`RateLimiterOptions.GlobalLimiter`), for an API that builds one for each host. Off by default, since an API may
+  share one limiter between hosts.
+
+### Changed
+
+- **Dependency:** `ArturRios.Util.WebApi` updated from 5.2.0 to 6.0.0, which brings `Swashbuckle.AspNetCore` 11 and
+  `Microsoft.OpenApi` 3 with it. A test project gets them too, so the API it tests should be on
+  `ArturRios.Util.WebApi` 6 first; an API still on 5.x, built against Swashbuckle 10, can fail at run time in the
+  in-memory host. Nothing in this package's own API changes.
+- `ArturRios.Configuration` updated from 2.0.0 to 2.0.1, `ArturRios.Data.Relational.Core` from 5.0.1 to 5.0.2,
+  `ArturRios.Mediator` from 2.0.1 to 2.0.2 and `ArturRios.Util` from 2.2.0 to 2.2.1.
+- The package's tags are `utilities`, `test`, `testing`, `xunit` and `.net`. They were comma-separated, which NuGet
+  does not split on, so they were listed as `utilities,`, `test,` and `.net`.
+
+### Fixed
+
+- A disposed `WebApiTest<T>` (or `WebApiHost<TProgram>`) host can be garbage-collected. Every host stayed alive
+  until the test process exited, so a suite's memory grew with every test. Three things held it:
+  - a timer the API never stops captured the test's execution context, which reaches the test and its host. The
+    host now starts in an execution context of its own, carrying only the current cultures
+    (`WebApiHostOptions.IsolateExecutionContext`, on by default);
+  - such a timer, started on the thread `WebApplicationFactory` runs the API's entry point on, also captured that
+    thread's context, which holds the factory and the host. Disposing the host now releases what it holds;
+  - ASP.NET Core's rate-limiting middleware never disposes the limiter it builds for endpoint policies, whose timer
+    holds the whole application. Disposing the host now disposes that limiter.
+- A variant host made with `Factory.WithWebHostBuilder(...)` starts in an execution context of its own, as its host
+  does. It started in the test's, so a timer the API started captured the test's context and kept the variant, and
+  the host it came from, alive after both were disposed.
+- A host whose API's global rate limiter holds its services can be garbage-collected, with
+  `WebApiHostOptions.DisposeGlobalRateLimiter` on. The limiter's own timer kept it, its partitioner and what that
+  holds alive after the host was disposed; the host leaves it alone by default, since the API may share it between
+  hosts, and the documentation says what an API can do instead.
+- `AsyncFakeRepository.Query()` hands back the exception a query operator throws, as EF Core does. `SingleAsync` or
+  `FirstAsync` with no match threw a `TargetInvocationException` wrapping the `InvalidOperationException`, so a
+  handler that catches `InvalidOperationException` behaved differently against the fake and in production.
+- The async query operators over `AsyncFakeRepository.Query()` (`ToListAsync`, `CountAsync`, `FirstOrDefaultAsync`,
+  `await foreach`, ...) observe their cancellation token, as EF Core's do. They ran to completion with a cancelled one.
+- `AsyncFakeRepository`'s async methods return a cancelled task for a cancelled token, as `EfRepository`'s do,
+  instead of throwing `OperationCanceledException` before returning one. Code that starts the call and awaits it later
+  now sees the cancellation where it would in production.
+- Disposing a `WebApiTest<T>` or `WebApiHost<TProgram>` puts back the `ASPNETCORE_ENVIRONMENT` value the process had
+  before the host set it, once the last host that set it is disposed. The variable stayed set, so a later test in
+  another class that read it, or built a host of its own with `WebApplication.CreateBuilder()`, ran as the earlier
+  host's environment, depending on the order the tests ran in. The docs no longer give the environment-aware test
+  attributes as the reason the variable is set: they read it when the tests are discovered, before any host starts.
+
 ## [6.0.0] - 2026-11-14
 
 ### Changed
@@ -190,7 +267,8 @@ read-only bases), exactly as `EfRepository<T, TKey>` does.
 - In-memory `FakeRepository<T>` and `FakeScheduler`.
 - `WebApiTest<T>`, a base class for functional web API tests on an in-memory host, and `TestException`.
 
-[Unreleased]: https://github.com/artur-rios/dotnet-test-util/compare/6.0.0...HEAD
+[Unreleased]: https://github.com/artur-rios/dotnet-test-util/compare/6.1.0...HEAD
+[6.1.0]: https://github.com/artur-rios/dotnet-test-util/compare/6.0.0...6.1.0
 [6.0.0]: https://github.com/artur-rios/dotnet-test-util/compare/5.0.1...6.0.0
 [5.0.1]: https://github.com/artur-rios/dotnet-test-util/compare/5.0.0...5.0.1
 [5.0.0]: https://github.com/artur-rios/dotnet-test-util/compare/4.0.0...5.0.0

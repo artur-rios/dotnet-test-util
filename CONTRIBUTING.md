@@ -26,7 +26,7 @@ dotnet build src/ArturRios.Util.Test.sln
 
 ## Testing
 
-The test suite is xUnit, and every test is named with the Given / When / Then pattern. Every test class
+The test suite is xUnit v3, and every test is named with the Given / When / Then pattern. Every test class
 carries a `Category` trait, so the two kinds can be run — and reported — separately:
 
 ```bash
@@ -35,22 +35,31 @@ dotnet test src/ArturRios.Util.Test.sln --filter "Category=Functional"
 ```
 
 Unit tests exercise the assertions, attributes and fakes in isolation.
-Functional tests host the `sut/` web app in memory through `WebApiTest<Program>` and drive real HTTP
-requests against it.
-The `test` check runs the two one after the other, and both must pass before a pull request can be merged. It is `ci/test.sh`, which you can run on your machine
-as well.
+Functional tests host the `sut/` web app in memory through `WebApiTest<Program>` and `WebApiHost<Program>` and drive
+real HTTP requests against it. The app runs ASP.NET Core's rate limiter and a service with a timer it never stops, as
+the APIs this library tests do, so the host-leak tests (`WebApiHostLeakTests`) can show that a disposed host is still
+collected.
+The suite runs in parallel, except for the test classes that set the process-wide `ASPNETCORE_ENVIRONMENT`
+variable (the attribute tests and every `WebApiTest<Program>` or `WebApiHost<Program>` host): they share the
+`EnvironmentVariableCollection` and run one at a time. A new test class that sets or reads the variable joins that
+collection. The `EnvironmentVariableScope` tests use variables named after a new `Guid`, which nothing else reads, so
+they run in parallel.
 
-The check also fails when a test has no `Category` trait, since no run would include it, and when
-`dotnet format --verify-no-changes` finds a file to reformat; run `dotnet format src/ArturRios.Util.Test.sln` before pushing.
+CI runs the suite once, in the `coverage` check (`ci/coverage.sh`): every test of both kinds, with coverage
+collected, and the HTML report that the docs site serves at `/coverage-report/`. Every test must pass, and none may
+skip, before a pull request can be merged. You can run it on your machine as well.
 
-The `coverage` check (`ci/coverage.sh`) runs the tests with coverage collected and makes the HTML report that the docs site
-serves at `/coverage-report/`.
+The `test` check (`ci/test.sh`) runs no test: it fails when `dotnet format --verify-no-changes` finds a file to
+reformat (run `dotnet format src/ArturRios.Util.Test.sln` before pushing), when the solution does not build, and when
+a test has no `Category` trait, since neither run above would include it. Running the suite there too would only run
+it twice: each check runs in a container of its own, at the same time as the other, and cannot read its result.
 
 `Category` is the same trait the `UnitFact`, `UnitTheory`, `FunctionalFact` and `FunctionalTheory`
 attributes in this package stamp on your own tests — see
 [Assertions and attributes](https://docs.artur-rios.tech/dotnet-test-util/docs/assertions-and-attributes/).
 Use those in a project that references this package; a project that does not can put
-`[Trait("Category", "Unit")]` on the class, as this repository's own tests do, and both filter the same way.
+`[Trait("Category", "Unit")]` on the class, as this repository's own tests do (all but `CategoryTraitDiscoveryTests`,
+which uses the attributes to check that test discovery reads their trait), and both filter the same way.
 
 ## Branching and pull requests
 

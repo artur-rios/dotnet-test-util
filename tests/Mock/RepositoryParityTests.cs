@@ -132,6 +132,74 @@ public sealed class RepositoryParityTests : IDisposable
     }
 
     [Fact]
+    public async Task GivenNoMatchingEntity_WhenQueryingForTheSingleOrFirstOneAsynchronously_ThenBothThrowInvalidOperationException()
+    {
+        // Exactly InvalidOperationException, as EF Core throws it: a handler that catches it must behave the same
+        // against the fake.
+        foreach (var (name, repository) in AsyncRepositories<Person>())
+        {
+            await repository.CreateAsync(new Person { Name = "Ann" }, TestContext.Current.CancellationToken);
+
+            var single = await Record.ExceptionAsync(() =>
+                repository.Query().SingleAsync(p => p.Name == "Nobody", TestContext.Current.CancellationToken));
+            var first = await Record.ExceptionAsync(() =>
+                repository.Query().FirstAsync(p => p.Name == "Nobody", TestContext.Current.CancellationToken));
+
+            Assert.True(single?.GetType() == typeof(InvalidOperationException), $"{name}: {single}");
+            Assert.True(first?.GetType() == typeof(InvalidOperationException), $"{name}: {first}");
+        }
+    }
+
+    [Fact]
+    public async Task GivenACancelledToken_WhenRunningAnAsyncQueryOperator_ThenBothCancel()
+    {
+        var cancelled = new CancellationToken(canceled: true);
+
+        foreach (var (name, repository) in AsyncRepositories<Person>())
+        {
+            await repository.CreateAsync(new Person { Name = "Ann" }, TestContext.Current.CancellationToken);
+
+            var exceptions = new[]
+            {
+                await Record.ExceptionAsync(() => repository.Query().ToListAsync(cancelled)),
+                await Record.ExceptionAsync(() => repository.Query().CountAsync(cancelled)),
+                await Record.ExceptionAsync(() => repository.Query().FirstOrDefaultAsync(p => p.Name == "Ann", cancelled)),
+                await Record.ExceptionAsync(async () =>
+                {
+                    await foreach (var _ in repository.Query().AsAsyncEnumerable().WithCancellation(cancelled))
+                    {
+                    }
+                })
+            };
+
+            Assert.All(exceptions, exception => Assert.True(exception is OperationCanceledException, $"{name}: {exception}"));
+        }
+    }
+
+    [Fact]
+    public async Task GivenACancelledToken_WhenCallingAnAsyncOperation_ThenBothReturnACancelledTaskRatherThanThrow()
+    {
+        var cancelled = new CancellationToken(canceled: true);
+
+        foreach (var (name, repository) in AsyncRepositories<Person>())
+        {
+            Task? getAll = null;
+            Task? create = null;
+
+            // Calling must not throw: the cancellation is in the task, where an await or a continuation sees it.
+            var thrown = Record.Exception(() =>
+            {
+                getAll = repository.GetAllAsync(cancelled);
+                create = repository.CreateAsync(new Person { Name = "Ann" }, cancelled);
+            });
+
+            Assert.True(thrown is null, $"{name}: {thrown}");
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => getAll!);
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => create!);
+        }
+    }
+
+    [Fact]
     public void GivenAFetchedList_WhenEntitiesAreCreatedAfterwards_ThenTheListIsASnapshot()
     {
         foreach (var (name, repository) in Repositories<Person>())
@@ -243,6 +311,56 @@ public sealed class RepositoryParityTests : IDisposable
 
             AssertFailedWith(name, RelationalErrors.ConcurrencyMessage, result);
             Assert.True(repository.Query().Any(a => a.Id == id), name);
+        }
+    }
+
+    [Fact]
+    public async Task GivenARangeWithOneStaleConcurrencyStamp_WhenUpdating_ThenBothFailAndUpdateNothing()
+    {
+        foreach (var (name, repository) in AsyncRepositories<Account>())
+        {
+            var firstId = (await repository.CreateAsync(new Account { Owner = "Ann" }, TestContext.Current.CancellationToken)).Data;
+            var secondId = (await repository.CreateAsync(new Account { Owner = "Bob" }, TestContext.Current.CancellationToken)).Data;
+            var firstStamp = repository.Query().AsNoTracking().Single(a => a.Id == firstId).ConcurrencyStamp;
+
+            var result = await repository.UpdateRangeAsync([
+                new Account { Id = firstId, Owner = "Ann Smith", ConcurrencyStamp = firstStamp },
+                new Account { Id = secondId, Owner = "Mallory" }
+            ], TestContext.Current.CancellationToken);
+
+            AssertFailedWith(name, RelationalErrors.ConcurrencyMessage, result);
+            Assert.Equal("Ann", repository.Query().AsNoTracking().Single(a => a.Id == firstId).Owner);
+            Assert.Equal(firstStamp, repository.Query().AsNoTracking().Single(a => a.Id == firstId).ConcurrencyStamp);
+        }
+    }
+
+    [Fact]
+    public void GivenTheCurrentConcurrencyStamp_WhenDeleting_ThenBothRemoveTheEntity()
+    {
+        foreach (var (name, repository) in Repositories<Account>())
+        {
+            var id = repository.Create(new Account { Owner = "Ann" }).Data;
+            var stamp = repository.Query().AsNoTracking().Single(a => a.Id == id).ConcurrencyStamp;
+
+            var result = repository.Delete(new Account { Id = id, ConcurrencyStamp = stamp });
+
+            Assert.True(result.Success, name);
+            Assert.False(repository.Query().Any(a => a.Id == id), name);
+        }
+    }
+
+    [Fact]
+    public void GivenARangeOfIdsWithAnUnknownOne_WhenDeleting_ThenBothReportOnlyTheIdsTheyRemoved()
+    {
+        foreach (var (name, repository) in Repositories<Person>())
+        {
+            var ids = repository.CreateRange([new Person { Name = "Ann" }, new Person { Name = "Bob" }]).Data!.ToList();
+
+            var result = repository.DeleteRange([ids[0], 999]);
+
+            Assert.True(result.Success, name);
+            Assert.Equal([ids[0]], result.Data);
+            Assert.Equal(ids[1], Assert.Single(repository.Query().AsNoTracking()).Id);
         }
     }
 }

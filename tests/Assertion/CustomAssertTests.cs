@@ -2,7 +2,7 @@ using System.Collections;
 using ArturRios.Util.Test.Assertion;
 using Xunit.Sdk;
 
-namespace ArturRios.Util.Test.Tests;
+namespace ArturRios.Util.Test.Tests.Assertion;
 
 [Trait("Category", "Unit")]
 public class CustomAssertTests
@@ -43,6 +43,39 @@ public class CustomAssertTests
     public void GivenAnEmptyCollection_WhenAssertingItIsNotNullOrEmpty_ThenTheAssertionFails()
     {
         Assert.Throws<TrueException>(() => CustomAssert.NotNullOrEmpty(Array.Empty<int>()));
+    }
+
+    [Fact]
+    public void GivenAnEmptyLazySequence_WhenAssertingItIsNullOrEmpty_ThenTheAssertionPasses()
+    {
+        CustomAssert.NullOrEmpty(Enumerable.Empty<int>().Where(_ => true));
+    }
+
+    [Fact]
+    public void GivenAnEndlessLazySequence_WhenAssertingItIsNotNullOrEmpty_ThenItPassesAfterReadingOneElement()
+    {
+        var read = 0;
+
+        CustomAssert.NotNullOrEmpty(Endless());
+
+        Assert.Equal(1, read);
+
+        IEnumerable<int> Endless()
+        {
+            while (true)
+            {
+                read++;
+                yield return read;
+            }
+        }
+    }
+
+    [Fact]
+    public void GivenANonGenericCollection_WhenAssertingIt_ThenItsCountDecides()
+    {
+        CustomAssert.NullOrEmpty(new ArrayList());
+        CustomAssert.NotNullOrEmpty(new ArrayList { "item" });
+        Assert.Throws<TrueException>(() => CustomAssert.NullOrEmpty(new Hashtable { ["key"] = "value" }));
     }
 
     // --- string overloads ---
@@ -90,10 +123,28 @@ public class CustomAssertTests
         Assert.Throws<TrueException>(() => CustomAssert.NullOrWhiteSpace("x"));
     }
 
-    [Fact]
-    public void GivenAStringWithContent_WhenAssertingItIsNotNullOrWhiteSpace_ThenTheAssertionPasses()
+    [Theory]
+    [InlineData("x")]
+    [InlineData("  x  ")]
+    public void GivenAStringWithContent_WhenAssertingItIsNotNullOrWhiteSpace_ThenTheAssertionPasses(string value)
     {
-        CustomAssert.NotNullOrWhiteSpace("x");
+        CustomAssert.NotNullOrWhiteSpace(value);
+    }
+
+    [Theory]
+    [InlineData("\t")]
+    [InlineData("\r\n")]
+    [InlineData("\u00A0")] // a no-break space
+    public void GivenOtherWhiteSpaceCharacters_WhenAssertingTheStringIsNullOrWhiteSpace_ThenTheAssertionPasses(string value)
+    {
+        CustomAssert.NullOrWhiteSpace(value);
+        Assert.Throws<FalseException>(() => CustomAssert.NotNullOrWhiteSpace(value));
+    }
+
+    [Fact]
+    public void GivenAWhitespaceString_WhenAssertingItIsNotNullOrEmpty_ThenTheAssertionPasses()
+    {
+        CustomAssert.NotNullOrEmpty(" ");
     }
 
     [Theory]

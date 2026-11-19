@@ -32,6 +32,21 @@ public class Country : Entity<string>
     public string Name { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// <see cref="short"/>-keyed entity: a value-type key the fakes have no default generator for, so the caller assigns it.
+/// </summary>
+public class Seat : Entity<short>
+{
+    public string Row { get; set; } = string.Empty;
+}
+
+/// <summary><see cref="long"/>-keyed entity with a read-only, computed property, which an update cannot write.</summary>
+public class Product : Entity<long>
+{
+    public string Name { get; set; } = string.Empty;
+    public string Label => $"#{Id} {Name}";
+}
+
 /// <summary><see cref="long"/>-keyed entity with an optimistic-concurrency stamp, used to exercise the fakes' stamp checks.</summary>
 public class Account : VersionedEntity<long>
 {
