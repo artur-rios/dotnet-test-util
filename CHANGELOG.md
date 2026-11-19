@@ -39,6 +39,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   (`RateLimiterOptions.GlobalLimiter`), for an API that builds one for each host. Off by default, since an API may
   share one limiter between hosts.
 
+### Changed
+
+- **Dependency:** `ArturRios.Util.WebApi` updated from 5.2.0 to 6.0.0, which brings `Swashbuckle.AspNetCore` 11 and
+  `Microsoft.OpenApi` 3 with it. A test project gets them too, so the API it tests should be on
+  `ArturRios.Util.WebApi` 6 first; an API still on 5.x, built against Swashbuckle 10, can fail at run time in the
+  in-memory host. Nothing in this package's own API changes.
+- `ArturRios.Configuration` updated from 2.0.0 to 2.0.1, `ArturRios.Data.Relational.Core` from 5.0.1 to 5.0.2,
+  `ArturRios.Mediator` from 2.0.1 to 2.0.2 and `ArturRios.Util` from 2.2.0 to 2.2.1.
+- The package's tags are `utilities`, `test`, `testing`, `xunit` and `.net`. They were comma-separated, which NuGet
+  does not split on, so they were listed as `utilities,`, `test,` and `.net`.
+
 ### Fixed
 
 - A disposed `WebApiTest<T>` (or `WebApiHost<TProgram>`) host can be garbage-collected. Every host stayed alive
@@ -65,6 +76,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - `AsyncFakeRepository`'s async methods return a cancelled task for a cancelled token, as `EfRepository`'s do,
   instead of throwing `OperationCanceledException` before returning one. Code that starts the call and awaits it later
   now sees the cancellation where it would in production.
+- Disposing a `WebApiTest<T>` or `WebApiHost<TProgram>` puts back the `ASPNETCORE_ENVIRONMENT` value the process had
+  before the host set it, once the last host that set it is disposed. The variable stayed set, so a later test in
+  another class that read it, or built a host of its own with `WebApplication.CreateBuilder()`, ran as the earlier
+  host's environment, depending on the order the tests ran in. The docs no longer give the environment-aware test
+  attributes as the reason the variable is set: they read it when the tests are discovered, before any host starts.
 
 ## [6.0.0] - 2026-11-14
 

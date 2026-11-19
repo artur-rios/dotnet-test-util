@@ -34,8 +34,9 @@ public sealed class WebApiHostOptions
 
     /// <summary>
     /// Whether starting the host also sets the process-wide <c>ASPNETCORE_ENVIRONMENT</c> variable to
-    /// <see cref="EnvironmentName"/>, which is what the environment-aware test attributes read. Defaults to
-    /// <c>true</c>, as <c>WebApiTest</c> always has. The host runs as <see cref="EnvironmentName"/> either way; turn it
+    /// <see cref="EnvironmentName"/> until the host is disposed, for code of the API that reads the variable itself.
+    /// The environment-aware test attributes read it when the tests are discovered, before any host starts, so it
+    /// does not change which tests they skip. Defaults to <c>true</c>, as <c>WebApiTest</c> always has. The host runs as <see cref="EnvironmentName"/> either way; turn it
     /// off for a host that must not change the variable under tests running in parallel with it.
     /// </summary>
     public bool SetEnvironmentVariable { get; set; } = true;

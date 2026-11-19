@@ -45,7 +45,7 @@ public class ProductsApiTests : WebApiTest<Program>
 ```
 
 The constructor sets `ASPNETCORE_ENVIRONMENT` to the given environment (lower-cased), starts the in-memory
-host, and creates the gateway against it.
+host, and creates the gateway against it. Disposing the test puts the variable's earlier value back.
 
 ## Members
 
@@ -82,9 +82,11 @@ public ProductsApiTests() : base("Testing") { }                    // an environ
 public ProductsApiTests() : base(new WebApiHostOptions { EnvironmentName = "Testing" }) { }
 ```
 
-Starting the host sets the process-wide `ASPNETCORE_ENVIRONMENT` variable to that name, which is what the
-environment-aware test attributes read, so hosts of different environments cannot start in parallel: put their test
-classes in one xUnit collection. A host that must leave the variable alone sets
+Starting the host sets the process-wide `ASPNETCORE_ENVIRONMENT` variable to that name until the host is disposed,
+for code of the API that reads the variable itself (in `Program.cs`, before `Build()`, say); once the last host that
+set it is disposed, the variable has its earlier value again. Hosts of different environments therefore cannot start
+in parallel: put their test classes in one xUnit collection. The environment-aware test attributes read the variable
+when the tests are discovered, before any host starts, so a host does not change which tests they skip. A host that must leave the variable alone sets
 `WebApiHostOptions.SetEnvironmentVariable = false`; it still runs as its environment.
 
 ## Configuring the host
